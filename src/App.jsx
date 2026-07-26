@@ -420,40 +420,66 @@ function Checkout({ items, setView, clearCart }) {
     }
   };
 
+  const [debugMsg, setDebugMsg] = useState("");
+
   // Once we have an unpaid order and Moyasar's key, mount their hosted card form.
   useEffect(() => {
     if (!order || !publishableKey || paid) return;
+    setDebugMsg("Loading payment form script...");
+
+    const existing = document.querySelector('script[src*="moyasar.js"]');
+    const mount = () => {
+      try {
+        if (!document.querySelector(".mysr-form")) {
+          setDebugMsg("Error: .mysr-form element not found in page yet.");
+          return;
+        }
+        if (!window.Moyasar) {
+          setDebugMsg("Error: Moyasar script loaded but window.Moyasar is undefined.");
+          return;
+        }
+        window.Moyasar.init({
+          element: ".mysr-form",
+          amount: Math.round(order.total * 100),
+          currency: "SAR",
+          description: `SADAAR order #${order.orderId}`,
+          publishable_api_key: publishableKey,
+          callback_url: window.location.href,
+          methods: ["creditcard"],
+          metadata: { orderId: String(order.orderId) },
+          on_completed: async (payment) => {
+            try {
+              await api(`/orders/${order.orderId}/confirm-payment`, {
+                method: "POST",
+                body: JSON.stringify({ paymentId: payment.id }),
+              });
+              setPaid(true);
+              clearCart();
+            } catch (e) {
+              setError(e.message);
+            }
+          },
+        });
+        setDebugMsg("");
+      } catch (err) {
+        setDebugMsg(`Error initializing payment form: ${err.name}: ${err.message}`);
+      }
+    };
+
+    if (existing && window.Moyasar) {
+      mount();
+      return;
+    }
+
+    const linkEl = document.createElement("link");
+    linkEl.rel = "stylesheet";
+    linkEl.href = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.css";
+    document.head.appendChild(linkEl);
+
     const script = document.createElement("script");
     script.src = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.js";
-    script.onload = () => {
-      const linkEl = document.createElement("link");
-      linkEl.rel = "stylesheet";
-      linkEl.href = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.css";
-      document.head.appendChild(linkEl);
-
-      window.Moyasar.init({
-        element: ".mysr-form",
-        amount: Math.round(order.total * 100), // halalas
-        currency: "SAR",
-        description: `SADAAR order #${order.orderId}`,
-        publishable_api_key: publishableKey,
-        callback_url: window.location.href,
-        methods: ["creditcard"],
-        metadata: { orderId: String(order.orderId) },
-        on_completed: async (payment) => {
-          try {
-            await api(`/orders/${order.orderId}/confirm-payment`, {
-              method: "POST",
-              body: JSON.stringify({ paymentId: payment.id }),
-            });
-            setPaid(true);
-            clearCart();
-          } catch (e) {
-            setError(e.message);
-          }
-        },
-      });
-    };
+    script.onload = () => { setDebugMsg("Script loaded, initializing form..."); mount(); };
+    script.onerror = () => setDebugMsg("Error: failed to load moyasar.js from CDN (network/blocked?).");
     document.body.appendChild(script);
   }, [order, publishableKey, paid]);
 
@@ -477,6 +503,7 @@ function Checkout({ items, setView, clearCart }) {
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}>Order #{order.orderId} — {money(order.total)}</p>
         {!publishableKey && <ErrorBox message="payment gateway isn't configured yet on the backend (MOYASAR_PUBLISHABLE_KEY missing)" />}
         {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 12 }}>{error}</p>}
+        {debugMsg && <p style={{ color: C.muted, fontFamily: "monospace", fontSize: 11, marginBottom: 12, whiteSpace: "pre-wrap" }}>{debugMsg}</p>}
         <div className="mysr-form" ref={formRef} />
       </div>
     );
