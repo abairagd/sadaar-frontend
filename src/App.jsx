@@ -386,7 +386,14 @@ function Checkout({ items, setView, clearCart }) {
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", city: "", address: "" });
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState(null);
-  const [order, setOrder] = useState(null);
+  const [order, setOrder] = useState(null); // set once the (unpaid) order is created
+  const [paid, setPaid] = useState(false);
+  const [publishableKey, setPublishableKey] = useState(null);
+  const formRef = React.useRef(null);
+
+  useEffect(() => {
+    api("/config/moyasar").then((c) => setPublishableKey(c.publishableKey)).catch(() => {});
+  }, []);
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -406,7 +413,6 @@ function Checkout({ items, setView, clearCart }) {
         }),
       });
       setOrder(result);
-      clearCart();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -414,14 +420,64 @@ function Checkout({ items, setView, clearCart }) {
     }
   };
 
-  if (order) {
+  // Once we have an unpaid order and Moyasar's key, mount their hosted card form.
+  useEffect(() => {
+    if (!order || !publishableKey || paid) return;
+    const script = document.createElement("script");
+    script.src = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.js";
+    script.onload = () => {
+      const linkEl = document.createElement("link");
+      linkEl.rel = "stylesheet";
+      linkEl.href = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.css";
+      document.head.appendChild(linkEl);
+
+      window.Moyasar.init({
+        element: ".mysr-form",
+        amount: Math.round(order.total * 100), // halalas
+        currency: "SAR",
+        description: `SADAAR order #${order.orderId}`,
+        publishable_api_key: publishableKey,
+        callback_url: window.location.href,
+        methods: ["creditcard"],
+        metadata: { orderId: String(order.orderId) },
+        on_completed: async (payment) => {
+          try {
+            await api(`/orders/${order.orderId}/confirm-payment`, {
+              method: "POST",
+              body: JSON.stringify({ paymentId: payment.id }),
+            });
+            setPaid(true);
+            clearCart();
+          } catch (e) {
+            setError(e.message);
+          }
+        },
+      });
+    };
+    document.body.appendChild(script);
+  }, [order, publishableKey, paid]);
+
+  if (paid) {
     return (
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
         <Check size={30} color={C.ink} style={{ marginBottom: 16 }} />
-        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>Order placed</h1>
+        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>Payment received</h1>
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, marginBottom: 4 }}>Order #{order.orderId} — {money(order.total)}</p>
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Saved to the live SADAAR database. Payment isn't connected yet, so this order shows as unpaid until a gateway is wired in.</p>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Each brand in your bag has been notified to fulfill their item.</p>
         <button onClick={() => setView({ type: "home" })} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Back to SADAAR</button>
+      </div>
+    );
+  }
+
+  // Order exists (unpaid) — show the real card form.
+  if (order) {
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "32px 24px 64px" }}>
+        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>Payment</h1>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}>Order #{order.orderId} — {money(order.total)}</p>
+        {!publishableKey && <ErrorBox message="payment gateway isn't configured yet on the backend (MOYASAR_PUBLISHABLE_KEY missing)" />}
+        {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 12 }}>{error}</p>}
+        <div className="mysr-form" ref={formRef} />
       </div>
     );
   }
@@ -429,7 +485,7 @@ function Checkout({ items, setView, clearCart }) {
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 24px 64px" }}>
       <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>Checkout</h1>
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Placing this creates a real order in the SADAAR database. Payment isn't connected yet — this is where Moyasar or HyperPay will plug in.</p>
+      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Enter your shipping details, then you'll pay by card on the next step.</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
         <input placeholder="Full name" value={form.fullName} onChange={set("fullName")} style={inputStyle} />
         <input placeholder="Email (optional)" value={form.email} onChange={set("email")} style={inputStyle} />
@@ -443,7 +499,7 @@ function Checkout({ items, setView, clearCart }) {
         <p style={{ fontSize: 15, fontWeight: 600 }}>{money(subtotal)}</p>
       </div>
       <button onClick={placeOrder} disabled={placing} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: placing ? "default" : "pointer", opacity: placing ? 0.7 : 1 }}>
-        {placing ? "Placing order..." : "Place order"}
+        {placing ? "Placing order..." : "Continue to payment"}
       </button>
     </div>
   );
