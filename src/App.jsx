@@ -427,6 +427,11 @@ function Checkout({ items, setView, clearCart }) {
     if (!order || !publishableKey || paid) return;
     setDebugMsg("Loading payment form script...");
 
+    // 3D Secure does a full page redirect + reload, wiping React state. Save what
+    // we need to sessionStorage so the app can pick up where it left off after
+    // the redirect back (see the top-level check in SadaarMarketplace below).
+    sessionStorage.setItem("sadaar_pending_order", JSON.stringify({ orderId: order.orderId, total: order.total }));
+
     const existing = document.querySelector('script[src*="moyasar.js"]');
     const mount = () => {
       try {
@@ -444,7 +449,7 @@ function Checkout({ items, setView, clearCart }) {
           currency: "SAR",
           description: `SADAAR order #${order.orderId}`,
           publishable_api_key: publishableKey,
-          callback_url: window.location.href,
+          callback_url: window.location.origin + window.location.pathname,
           methods: ["creditcard"],
           metadata: { orderId: String(order.orderId) },
           on_completed: async (payment) => {
@@ -541,6 +546,47 @@ export default function SadaarMarketplace() {
   const [homeProducts, setHomeProducts] = useState([]);
   const [homeLoading, setHomeLoading] = useState(true);
   const [homeError, setHomeError] = useState(null);
+  const [returningPayment, setReturningPayment] = useState(null); // { status: 'checking'|'paid'|'error', orderId, total, message }
+
+  const [showDebugBanner, setShowDebugBanner] = useState(false);
+  const [debugBannerText, setDebugBannerText] = useState("");
+
+  // Handle the return trip from Moyasar's 3D Secure redirect. Moyasar appends
+  // ?id=<payment_id> to our callback_url after the bank's verification step,
+  // and the page fully reloads at that point (wiping normal React state), so
+  // we recover the pending order from sessionStorage and finish the job here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentId = params.get("id");
+    const pendingRaw = sessionStorage.getItem("sadaar_pending_order");
+
+    setDebugBannerText(`url: ${window.location.href}\nid param: ${paymentId || "(none)"}\nsessionStorage pending: ${pendingRaw || "(none)"}`);
+    setShowDebugBanner(true);
+
+    if (!paymentId) return;
+
+    window.history.replaceState({}, "", window.location.pathname); // clean the URL
+
+    if (!pendingRaw) {
+      setReturningPayment({ status: "error", message: "Payment returned, but we lost track of which order it belongs to. Please check your order status or contact support." });
+      return;
+    }
+    const pending = JSON.parse(pendingRaw);
+    setReturningPayment({ status: "checking", orderId: pending.orderId, total: pending.total });
+
+    api(`/orders/${pending.orderId}/confirm-payment`, {
+      method: "POST",
+      body: JSON.stringify({ paymentId }),
+    })
+      .then(() => {
+        sessionStorage.removeItem("sadaar_pending_order");
+        setCart([]);
+        setReturningPayment({ status: "paid", orderId: pending.orderId, total: pending.total });
+      })
+      .catch((e) => {
+        setReturningPayment({ status: "error", orderId: pending.orderId, message: e.message });
+      });
+  }, []);
 
   useEffect(() => {
     setHomeLoading(true);
@@ -571,29 +617,68 @@ export default function SadaarMarketplace() {
   return (
     <div style={{ background: C.sand, minHeight: "100vh" }}>
       <style>{FONTS}</style>
-      <Header setView={setView} cartCount={cartCount} onSearchClick={() => setView({ type: "browse" })} />
 
-      {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} />}
-      {view.type === "browse" && <Browse initialCat={view.cat} openProduct={openProduct} brands={brands} />}
-      {view.type === "brands" && (
-        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px 64px" }}>
-          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>All brands</h1>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
-            {brands.map((b) => (
-              <div key={b.id} style={{ border: `1px solid ${C.line}`, padding: 20, background: C.warm }}>
-                <p style={{ margin: 0, fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>{b.name}</p>
-                <p style={{ margin: "6px 0 0", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{b.description}</p>
-                <button onClick={() => setView({ type: "browse", cat: b.category })} style={{ marginTop: 14, background: "none", border: `1px solid ${C.ink}`, padding: "8px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer" }}>Shop {b.name}</button>
-              </div>
-            ))}
-          </div>
+      {showDebugBanner && (
+        <div style={{ background: "#22331F", color: "#DCEAD8", padding: "10px 16px", fontFamily: "monospace", fontSize: 11, whiteSpace: "pre-wrap", position: "relative" }}>
+          {debugBannerText}
+          <button onClick={() => setShowDebugBanner(false)} style={{ position: "absolute", top: 8, right: 12, background: "none", border: "none", color: "#DCEAD8", cursor: "pointer" }}>✕</button>
         </div>
       )}
-      {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} />}
-      {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
-      {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
 
-      <Footer />
+      {returningPayment && (
+        <div style={{ maxWidth: 560, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+          {returningPayment.status === "checking" && (
+            <>
+              <Loader2 size={28} color={C.ink} style={{ animation: "spin 1s linear infinite", marginBottom: 16 }} />
+              <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink }}>Confirming your payment...</p>
+            </>
+          )}
+          {returningPayment.status === "paid" && (
+            <>
+              <Check size={30} color={C.ink} style={{ marginBottom: 16 }} />
+              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>Payment received</h1>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, marginBottom: 24 }}>Order #{returningPayment.orderId} — {money(returningPayment.total)}. A confirmation email is on its way.</p>
+              <button onClick={() => { setReturningPayment(null); setView({ type: "home" }); }} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Back to SADAAR</button>
+            </>
+          )}
+          {returningPayment.status === "error" && (
+            <>
+              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 8 }}>We couldn't confirm that payment</h1>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#A3402F", marginBottom: 24 }}>{returningPayment.message}</p>
+              <button onClick={() => { setReturningPayment(null); setView({ type: "home" }); }} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Back to SADAAR</button>
+            </>
+          )}
+        </div>
+      )}
+
+      {!returningPayment && (
+        <>
+          <Header setView={setView} cartCount={cartCount} onSearchClick={() => setView({ type: "browse" })} />
+
+          {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} />}
+          {view.type === "browse" && <Browse initialCat={view.cat} openProduct={openProduct} brands={brands} />}
+          {view.type === "brands" && (
+            <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px 64px" }}>
+              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>All brands</h1>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
+                {brands.map((b) => (
+                  <div key={b.id} style={{ border: `1px solid ${C.line}`, padding: 20, background: C.warm }}>
+                    <p style={{ margin: 0, fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>{b.name}</p>
+                    <p style={{ margin: "6px 0 0", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{b.description}</p>
+                    <button onClick={() => setView({ type: "browse", cat: b.category })} style={{ marginTop: 14, background: "none", border: `1px solid ${C.ink}`, padding: "8px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer" }}>Shop {b.name}</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} />}
+          {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
+          {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
+
+          <Footer />
+        </>
+      )}
     </div>
   );
 }
