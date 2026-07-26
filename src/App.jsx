@@ -473,11 +473,11 @@ function Checkout({ items, setView, clearCart }) {
 
     const linkEl = document.createElement("link");
     linkEl.rel = "stylesheet";
-    linkEl.href = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.css";
+    linkEl.href = "https://cdn.moyasar.com/mpf/1.7.3/moyasar.css";
     document.head.appendChild(linkEl);
 
     const script = document.createElement("script");
-    script.src = "https://cdn.moyasar.com/mysr/1.14.0/moyasar.js";
+    script.src = "https://cdn.moyasar.com/mpf/1.7.3/moyasar.js";
     script.onload = () => { setDebugMsg("Script loaded, initializing form..."); mount(); };
     script.onerror = () => setDebugMsg("Error: failed to load moyasar.js from CDN (network/blocked?).");
     document.body.appendChild(script);
