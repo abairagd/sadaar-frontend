@@ -428,9 +428,9 @@ function Checkout({ items, setView, clearCart }) {
     setDebugMsg("Loading payment form script...");
 
     // 3D Secure does a full page redirect + reload, wiping React state. Save what
-    // we need to sessionStorage so the app can pick up where it left off after
+    // we need to localStorage so the app can pick up where it left off after
     // the redirect back (see the top-level check in SadaarMarketplace below).
-    sessionStorage.setItem("sadaar_pending_order", JSON.stringify({ orderId: order.orderId, total: order.total }));
+    localStorage.setItem("sadaar_pending_order", JSON.stringify({ orderId: order.orderId, total: order.total }));
 
     const existing = document.querySelector('script[src*="moyasar.js"]');
     const mount = () => {
@@ -554,13 +554,13 @@ export default function SadaarMarketplace() {
   // Handle the return trip from Moyasar's 3D Secure redirect. Moyasar appends
   // ?id=<payment_id> to our callback_url after the bank's verification step,
   // and the page fully reloads at that point (wiping normal React state), so
-  // we recover the pending order from sessionStorage and finish the job here.
+  // we recover the pending order from localStorage and finish the job here.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const paymentId = params.get("id");
-    const pendingRaw = sessionStorage.getItem("sadaar_pending_order");
+    const pendingRaw = localStorage.getItem("sadaar_pending_order");
 
-    setDebugBannerText(`url: ${window.location.href}\nid param: ${paymentId || "(none)"}\nsessionStorage pending: ${pendingRaw || "(none)"}`);
+    setDebugBannerText(`url: ${window.location.href}\nid param: ${paymentId || "(none)"}\nlocalStorage pending: ${pendingRaw || "(none)"}`);
     setShowDebugBanner(true);
 
     if (!paymentId) return;
@@ -579,7 +579,7 @@ export default function SadaarMarketplace() {
       body: JSON.stringify({ paymentId }),
     })
       .then(() => {
-        sessionStorage.removeItem("sadaar_pending_order");
+        localStorage.removeItem("sadaar_pending_order");
         setCart([]);
         setReturningPayment({ status: "paid", orderId: pending.orderId, total: pending.total });
       })
