@@ -16,6 +16,22 @@ const C = {
 
 const FONTS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; }
+body { overflow-x: hidden; }
+
+@media (max-width: 680px) {
+  .sadaar-hero { flex-direction: column !important; gap: 24px !important; padding-left: 16px !important; padding-right: 16px !important; }
+  .sadaar-hero-grid { flex: 1 1 100% !important; }
+  .sadaar-browse-layout { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
+  .sadaar-browse-sidebar { width: 100% !important; }
+  .sadaar-browse-filters { display: flex !important; flex-wrap: wrap !important; gap: 16px 24px !important; margin-bottom: 20px !important; }
+  .sadaar-browse-filters > div { margin-bottom: 0 !important; }
+  .sadaar-product-layout { flex-direction: column !important; gap: 24px !important; padding-left: 16px !important; padding-right: 16px !important; }
+  .sadaar-product-image { flex: 1 1 100% !important; }
+  .sadaar-cart-row { flex-wrap: wrap !important; }
+  .sadaar-section { padding-left: 16px !important; padding-right: 16px !important; }
+}
 `;
 
 const CATEGORIES = ["Contemporary", "Abayas", "Streetwear", "Accessories", "Footwear"];
@@ -155,14 +171,14 @@ function Home({ setView, openProduct, products, brands, loading, error }) {
   const featured = products.slice(0, 8);
   return (
     <div>
-      <section style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 24px 40px", display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center" }}>
+      <section className="sadaar-hero" style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 24px 40px", display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center" }}>
         <div style={{ flex: "1 1 380px" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>Curated · Direct from the brand</p>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(34px, 5vw, 56px)", lineHeight: 1.05, color: C.ink, margin: 0 }}>The home of<br />Saudi fashion.</h1>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: C.muted, marginTop: 20, maxWidth: 420, lineHeight: 1.6 }}>Independent Saudi labels, one checkout. Every piece is shipped and stood behind by the brand that made it.</p>
           <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 28, background: C.ink, color: C.warm, border: "none", padding: "13px 28px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Shop the edit</button>
         </div>
-        <div style={{ flex: "1 1 340px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        <div className="sadaar-hero-grid" style={{ flex: "1 1 340px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           {featured.slice(0, 4).map((p, i) => (
             <div key={p.id} style={{ marginTop: i % 2 === 0 ? 30 : 0 }}><Swatch product={p} height={i === 1 ? 260 : 200} /></div>
           ))}
@@ -235,8 +251,9 @@ function Browse({ initialCat, openProduct, brands }) {
   }, [cat, brand, sort]);
 
   return (
-    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 64px", display: "flex", gap: 32 }}>
-      <aside style={{ width: 200, flexShrink: 0 }}>
+    <div className="sadaar-browse-layout" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 64px", display: "flex", gap: 32 }}>
+      <aside className="sadaar-browse-sidebar" style={{ width: 200, flexShrink: 0 }}>
+        <div className="sadaar-browse-filters">
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Category</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
           {["all", ...CATEGORIES].map((c) => (
@@ -248,6 +265,7 @@ function Browse({ initialCat, openProduct, brands }) {
           {[{ id: "all", name: "All" }, ...brands].map((b) => (
             <button key={b.id} onClick={() => setBrand(String(b.id))} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: brand === String(b.id) ? C.ink : C.muted, fontWeight: brand === String(b.id) ? 600 : 400 }}>{b.name}</button>
           ))}
+        </div>
         </div>
       </aside>
 
@@ -298,8 +316,8 @@ function ProductDetail({ productId, onBack, onAddToCart }) {
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 64px" }}>
       <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}><ChevronLeft size={16} /> Back</button>
-      <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
-        <div style={{ flex: "1 1 380px" }}><Swatch product={product} height={460} /></div>
+      <div className="sadaar-product-layout" style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
+        <div className="sadaar-product-image" style={{ flex: "1 1 380px" }}><Swatch product={product} height={460} /></div>
         <div style={{ flex: "1 1 320px" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze }}>{product.brand_name}</p>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: 30, color: C.ink, margin: "6px 0" }}>{product.name}</h1>
@@ -354,7 +372,7 @@ function Cart({ items, updateQty, removeItem, setView }) {
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 64px" }}>
       <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>Your bag</h1>
       {items.map((item, idx) => (
-        <div key={idx} style={{ display: "flex", gap: 18, padding: "18px 0", borderBottom: `1px solid ${C.line}` }}>
+        <div key={idx} className="sadaar-cart-row" style={{ display: "flex", gap: 18, padding: "18px 0", borderBottom: `1px solid ${C.line}` }}>
           <div style={{ width: 100, flexShrink: 0 }}><Swatch product={item.product} height={120} /></div>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{item.product.brand_name}</p>
