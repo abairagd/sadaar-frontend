@@ -141,6 +141,7 @@ function Header({ setView, cartCount, onSearchClick }) {
             <button key={c} onClick={() => { setView({ type: "browse", cat: c }); setMenuOpen(false); }} style={navBtn}>{c}</button>
           ))}
           <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>Brands</button>
+          <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>Track order</button>
         </div>
       )}
     </header>
@@ -557,6 +558,76 @@ function Checkout({ items, setView, clearCart }) {
 
 const inputStyle = { border: `1px solid ${C.line}`, padding: "12px 14px", fontFamily: "Inter, sans-serif", fontSize: 14, background: C.warm, color: C.char };
 
+function TrackOrder() {
+  const [orderId, setOrderId] = useState("");
+  const [contact, setContact] = useState("");
+  const [order, setOrder] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const lookup = async () => {
+    setError(null);
+    setOrder(null);
+    if (!orderId.trim() || !contact.trim()) {
+      setError("Enter both your order number and the email or phone you used.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await api(`/orders/${orderId.trim()}?contact=${encodeURIComponent(contact.trim())}`);
+      setOrder(result);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 560, margin: "0 auto", padding: "48px 24px 64px" }}>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 6 }}>Track your order</h1>
+      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Enter your order number and the email or phone you used at checkout.</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 8 }}>
+        <input placeholder="Order number (e.g. 17)" value={orderId} onChange={(e) => setOrderId(e.target.value)} style={inputStyle} />
+        <input placeholder="Email or phone used at checkout" value={contact} onChange={(e) => setContact(e.target.value)} style={inputStyle} />
+      </div>
+      {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, margin: "8px 0" }}>{error}</p>}
+      <button onClick={lookup} disabled={loading} style={{ marginTop: 8, background: C.ink, color: C.warm, border: "none", padding: "13px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
+        {loading ? "Looking up..." : "Track order"}
+      </button>
+
+      {order && (
+        <div style={{ marginTop: 32, borderTop: `1px solid ${C.line}`, paddingTop: 24 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+            <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink, margin: 0 }}>Order #{order.id}</p>
+            <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: order.payment_status === "paid" ? "#2F5B3C" : C.muted }}>{order.payment_status}</span>
+          </div>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}>{order.shipping_city} · placed {new Date(order.created_at).toLocaleDateString()}</p>
+          {order.items.map((i) => (
+            <div key={i.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.line}` }}>
+              <div>
+                <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{i.brand_name}</p>
+                <p style={{ margin: "2px 0 0", fontFamily: "Fraunces, serif", fontSize: 15, color: C.ink }}>{i.product_name} × {i.quantity}</p>
+                {i.tracking_number && <p style={{ margin: "4px 0 0", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>Tracking: {i.tracking_number}</p>}
+              </div>
+              <span style={{
+                fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase",
+                padding: "3px 9px", borderRadius: 3,
+                background: i.fulfillment_status === "pending" ? "#F3E6D8" : "#DDE7DB",
+                color: i.fulfillment_status === "pending" ? "#8A5A1E" : "#2F5B3C",
+              }}>{i.fulfillment_status}</span>
+            </div>
+          ))}
+          <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 0 0", fontFamily: "Inter, sans-serif" }}>
+            <p style={{ fontSize: 14, color: C.char }}>Total</p>
+            <p style={{ fontSize: 14, color: C.ink, fontWeight: 600 }}>{money(order.total)}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SadaarMarketplace() {
   const [view, setView] = useState({ type: "home" });
   const [cart, setCart] = useState([]);
@@ -680,6 +751,7 @@ export default function SadaarMarketplace() {
           {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} />}
           {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
+          {view.type === "track" && <TrackOrder />}
 
           <Footer />
         </>
