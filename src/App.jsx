@@ -631,6 +631,31 @@ function Checkout({ items, setView, clearCart }) {
   const [publishableKey, setPublishableKey] = useState(null);
   const formRef = React.useRef(null);
 
+  const [promoInput, setPromoInput] = useState("");
+  const [promo, setPromo] = useState(null); // { code, discountAmount }
+  const [promoError, setPromoError] = useState("");
+  const [checkingPromo, setCheckingPromo] = useState(false);
+
+  const applyPromo = async () => {
+    if (!promoInput.trim()) return;
+    setCheckingPromo(true);
+    setPromoError("");
+    try {
+      const result = await api("/discounts/validate", { method: "POST", body: JSON.stringify({ code: promoInput.trim(), subtotal }) });
+      setPromo(result);
+    } catch (e) {
+      setPromo(null);
+      setPromoError(e.message);
+    } finally {
+      setCheckingPromo(false);
+    }
+  };
+
+  const removePromo = () => { setPromo(null); setPromoInput(""); setPromoError(""); };
+
+  const discountAmount = promo?.discountAmount || 0;
+  const total = subtotal + shipping - discountAmount;
+
   useEffect(() => {
     api("/config/moyasar").then((c) => setPublishableKey(c.publishableKey)).catch(() => {});
   }, []);
@@ -650,6 +675,7 @@ function Checkout({ items, setView, clearCart }) {
         body: JSON.stringify({
           customer: form,
           items: items.map((i) => ({ variantId: i.variant.id, quantity: i.qty })),
+          discountCode: promo?.code || undefined,
         }),
       });
       setOrder(result);
@@ -765,19 +791,43 @@ function Checkout({ items, setView, clearCart }) {
         <input placeholder="City" value={form.city} onChange={set("city")} style={inputStyle} />
         <input placeholder="Address" value={form.address} onChange={set("address")} style={inputStyle} />
       </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {promo ? (
+          <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", border: `1px solid #2F5B3C`, padding: "10px 12px", fontFamily: "Inter, sans-serif", fontSize: 13, color: "#2F5B3C" }}>
+            <span>Code "{promo.code}" applied</span>
+            <button onClick={removePromo} style={{ background: "none", border: "none", cursor: "pointer", color: "#2F5B3C", textDecoration: "underline", fontSize: 12 }}>Remove</button>
+          </div>
+        ) : (
+          <>
+            <input placeholder="Promo code" value={promoInput} onChange={(e) => setPromoInput(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+            <button onClick={applyPromo} disabled={checkingPromo} style={{ background: "none", border: `1px solid ${C.ink}`, padding: "0 18px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer", color: C.char }}>
+              {checkingPromo ? "Checking..." : "Apply"}
+            </button>
+          </>
+        )}
+      </div>
+      {promoError && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 12, marginBottom: 12 }}>{promoError}</p>}
+
       {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 12 }}>{error}</p>}
       <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 14, fontFamily: "Inter, sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
           <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Subtotal</p>
           <p style={{ fontSize: 14, color: C.char, margin: 0 }}>{money(subtotal)}</p>
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
           <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Shipping</p>
           <p style={{ fontSize: 14, color: shipping === 0 ? "#2F5B3C" : C.char, margin: 0 }}>{shipping === 0 ? "Free" : money(shipping)}</p>
         </div>
+        {discountAmount > 0 && (
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+            <p style={{ fontSize: 14, color: "#2F5B3C", margin: 0 }}>Discount</p>
+            <p style={{ fontSize: 14, color: "#2F5B3C", margin: 0 }}>-{money(discountAmount)}</p>
+          </div>
+        )}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <p style={{ fontSize: 15 }}>Total due</p>
-          <p style={{ fontSize: 15, fontWeight: 600 }}>{money(subtotal + shipping)}</p>
+          <p style={{ fontSize: 15, fontWeight: 600 }}>{money(total)}</p>
         </div>
       </div>
       <button onClick={placeOrder} disabled={placing} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: placing ? "default" : "pointer", opacity: placing ? 0.7 : 1, marginTop: 16 }}>
