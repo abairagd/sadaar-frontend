@@ -4,8 +4,8 @@ import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, S
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
 
 const C = {
-  ink: "#16261C",
-  deep: "#1E3324",
+  ink: "#14282E",
+  deep: "#1A3B40",
   sand: "#F3ECDD",
   warm: "#FBF8F1",
   bronze: "#B08D57",
@@ -275,7 +275,7 @@ async function api(path, options = {}) {
 
 function Tag({ text }) {
   return (
-    <div style={{ position: "absolute", top: 14, left: -6, transform: "rotate(-6deg)", background: C.warm, border: `1px solid ${C.line}`, padding: "4px 10px 4px 16px", fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.ink, boxShadow: "1px 2px 4px rgba(22,38,28,0.12)", zIndex: 2 }}>
+    <div style={{ position: "absolute", top: 14, left: -6, transform: "rotate(-6deg)", background: C.warm, border: `1px solid ${C.line}`, padding: "4px 10px 4px 16px", fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.ink, boxShadow: "1px 2px 4px rgba(20,40,46,0.12)", zIndex: 2 }}>
       <span style={{ position: "absolute", left: 5, top: "50%", width: 5, height: 5, borderRadius: "50%", background: C.warm, border: `1px solid ${C.muted}`, transform: "translateY(-50%)" }} />
       {text}
     </div>
@@ -419,25 +419,25 @@ function Footer({ setView }) {
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px", display: "flex", flexWrap: "wrap", gap: 40, justifyContent: "space-between" }}>
         <div style={{ maxWidth: 320 }}>
           <div style={{ fontFamily: "Fraunces, serif", fontSize: 22, marginBottom: 8 }}>SADAAR</div>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.6, color: "#C9CDBF" }}>{t.footerTagline}</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.6, color: "#C5CDCE" }}>{t.footerTagline}</p>
         </div>
-        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
+        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C5CDCE" }}>
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerShop}</div>
           {CATEGORIES.map((c) => (
-            <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{categoryLabel(c)}</button>
+            <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{categoryLabel(c)}</button>
           ))}
         </div>
-        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
+        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C5CDCE" }}>
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerSadaar}</div>
-          <button onClick={() => setView({ type: "browse" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.shopAll}</button>
-          <button onClick={() => setView({ type: "wishlist" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.wishlistNav}</button>
-          <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
-          <button onClick={() => setView({ type: "contact" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.contactNav}</button>
-          <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.brandSignIn}</a>
-          <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
+          <button onClick={() => setView({ type: "browse" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.shopAll}</button>
+          <button onClick={() => setView({ type: "wishlist" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.wishlistNav}</button>
+          <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
+          <button onClick={() => setView({ type: "contact" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.contactNav}</button>
+          <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.brandSignIn}</a>
+          <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
         </div>
       </div>
-      <div style={{ borderTop: "1px solid #2C3D30", padding: "16px 24px", fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8C9186", textAlign: "center" }}>{t.footerCopyright}</div>
+      <div style={{ borderTop: "1px solid #253B3E", padding: "16px 24px", fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8A9598", textAlign: "center" }}>{t.footerCopyright}</div>
     </footer>
   );
 }
@@ -462,7 +462,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
         >
           <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/site-assets/fashion%20add.mp4" type="video/mp4" />
         </video>
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(22,38,28,0.25) 0%, rgba(22,38,28,0.6) 100%)" }} />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(20,40,46,0.25) 0%, rgba(20,40,46,0.6) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%", maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>{t.eyebrow}</p>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(34px, 6vw, 64px)", lineHeight: 1.05, color: C.warm, margin: 0 }}>{t.heroTitle1}<br />{t.heroTitle2}</h1>
@@ -486,7 +486,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
               >
                 <p style={{ fontFamily: "Inter, sans-serif", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.bronze, margin: 0 }}>{t.spotlight}</p>
                 <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, margin: "6px 0" }}>{s.brand_name}</p>
-                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#C9CDBF", margin: 0 }}>{s.brand_description}</p>
+                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#C5CDCE", margin: 0 }}>{s.brand_description}</p>
               </button>
             ))}
           </div>
@@ -523,7 +523,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           <section style={{ maxWidth: 1180, margin: "48px auto 0", padding: "36px 24px", background: C.deep, color: C.sand, display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, margin: 0 }}>{t.joinQuestion}</p>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#C9CDBF", marginTop: 6 }}>{t.joinSubtext}</p>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#C5CDCE", marginTop: 6 }}>{t.joinSubtext}</p>
             </div>
             <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ background: C.sand, color: C.ink, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
               {t.applyToSell}
