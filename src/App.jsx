@@ -349,7 +349,8 @@ function ErrorBox({ message }) {
 }
 
 function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
-  const { t, lang, toggleLang, categoryLabel } = useLang();
+  const { t, lang, toggleLang, categoryLabel, subcategoryLabel } = useLang();
+  const [hoveredCat, setHoveredCat] = useState(null);
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 20, background: C.warm, borderBottom: `1px solid ${C.line}` }}>
       <div className="sadaar-header-row" style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -361,7 +362,26 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
           <nav style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }} className="sadaar-top-nav">
             <button onClick={() => setView({ type: "home" })} style={boldNavBtn}>{t.home}</button>
             {CATEGORIES.map((c) => (
-              <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={boldNavBtn}>{categoryLabel(c)}</button>
+              <div key={c} onMouseEnter={() => setHoveredCat(c)} onMouseLeave={() => setHoveredCat(null)} style={{ position: "relative" }}>
+                <button onClick={() => setView({ type: "browse", cat: c })} style={boldNavBtn}>{categoryLabel(c)}</button>
+                {hoveredCat === c && (SUBCATEGORIES_BY_CATEGORY[c] || []).length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", insetInlineStart: 0, paddingTop: 10, zIndex: 30 }}>
+                    <div style={{ background: C.warm, border: `1px solid ${C.line}`, boxShadow: "0 8px 20px rgba(0,0,0,0.08)", minWidth: 180, padding: "10px 0" }}>
+                      {SUBCATEGORIES_BY_CATEGORY[c].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => { setView({ type: "browse", cat: c, subcat: s }); setHoveredCat(null); }}
+                          style={{ display: "block", width: "100%", textAlign: "start", background: "none", border: "none", cursor: "pointer", padding: "8px 18px", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = C.sand)}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                        >
+                          {subcategoryLabel(s)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
             <button onClick={() => setView({ type: "brands" })} style={boldNavBtn}>{t.brandsNav}</button>
           </nav>
@@ -440,7 +460,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           playsInline
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         >
-          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/product-images/SADAAR%20MP.mp4" type="video/mp4" />
+          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/site-assets/fashion%20add.mp4" type="video/mp4" />
         </video>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(22,38,28,0.25) 0%, rgba(22,38,28,0.6) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%", maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
@@ -534,9 +554,9 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
   );
 }
 
-function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist }) {
+function Browse({ initialCat, initialSubcat, openProduct, brands, wishlistIds, onToggleWishlist }) {
   const [cat, setCat] = useState(initialCat || "all");
-  const [subcat, setSubcat] = useState("all");
+  const [subcat, setSubcat] = useState(initialSubcat || "all");
   const [ptype, setPtype] = useState("all");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
@@ -547,11 +567,16 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { t, categoryLabel, subcategoryLabel, productTypeLabel } = useLang();
+  const isFirstCatRender = React.useRef(true);
 
   // Reset subcategory whenever the top-level category changes, and reset
   // product type whenever the subcategory changes — each level depends on
-  // the one above it.
-  useEffect(() => { setSubcat("all"); }, [cat]);
+  // the one above it. Skip the very first run so an initialSubcat passed in
+  // (e.g. from the header's hover dropdown) doesn't get immediately wiped.
+  useEffect(() => {
+    if (isFirstCatRender.current) { isFirstCatRender.current = false; return; }
+    setSubcat("all");
+  }, [cat]);
   useEffect(() => { setPtype("all"); }, [subcat]);
 
   useEffect(() => {
@@ -1393,7 +1418,7 @@ export default function SadaarMarketplace() {
           <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} />
 
           {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
-          {view.type === "browse" && <Browse initialCat={view.cat} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
+          {view.type === "browse" && <Browse key={`${view.cat || "all"}-${view.subcat || "all"}`} initialCat={view.cat} initialSubcat={view.subcat} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "brands" && (
             <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px 64px" }}>
               <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>{langCtx.t.allBrands}</h1>
