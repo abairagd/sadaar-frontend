@@ -159,6 +159,11 @@ const T = {
     footerShop: "Shop", footerSadaar: "SADAAR", footerJoin: "Join as a brand", footerCopyright: "© 2026 SADAAR. Every product ships direct from its brand.",
     fillAllFields: "Please fill in all fields.",
     enterOrderAndContact: "Enter both your order number and the email or phone you used.",
+    contactUs: "Contact us", contactSubtitle: "Have a question about an order, a brand, or anything else? Send us a message.",
+    yourName: "Your name", subjectOptional: "Subject (optional)", yourMessage: "Your message",
+    sendMessage: "Send message", sending: "Sending...", messageSent: "Message sent",
+    messageSentNote: "Thanks for reaching out — we'll get back to you by email.",
+    contactNav: "Contact",
   },
   ar: {
     home: "الرئيسية", shopAll: "تسوقي الكل", brandsNav: "الماركات", wishlistNav: "المفضلة", trackOrderNav: "تتبع الطلب",
@@ -200,6 +205,11 @@ const T = {
     footerShop: "تسوقي", footerSadaar: "سدّار", footerJoin: "انضمي كماركة", footerCopyright: "© 2026 سدّار. كل منتج يُشحن مباشرة من ماركته.",
     fillAllFields: "الرجاء تعبئة جميع الحقول.",
     enterOrderAndContact: "أدخلي رقم الطلب والبريد الإلكتروني أو الجوال المستخدم.",
+    contactUs: "تواصلي معنا", contactSubtitle: "لديك سؤال عن طلب أو ماركة أو أي شيء آخر؟ أرسلي لنا رسالة.",
+    yourName: "اسمك", subjectOptional: "الموضوع (اختياري)", yourMessage: "رسالتك",
+    sendMessage: "إرسال الرسالة", sending: "جارٍ الإرسال...", messageSent: "تم إرسال الرسالة",
+    messageSentNote: "شكرًا لتواصلك — سنرد عليك عبر البريد الإلكتروني.",
+    contactNav: "تواصل معنا",
   },
 };
 
@@ -343,6 +353,7 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
           <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>{t.brandsNav}</button>
           <button onClick={() => { setView({ type: "wishlist" }); setMenuOpen(false); }} style={navBtn}>{t.wishlistNav}</button>
           <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>{t.trackOrderNav}</button>
+          <button onClick={() => { setView({ type: "contact" }); setMenuOpen(false); }} style={navBtn}>{t.contactNav}</button>
         </div>
       )}
     </header>
@@ -369,6 +380,7 @@ function Footer({ setView }) {
         <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerSadaar}</div>
           <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
+          <button onClick={() => setView({ type: "contact" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.contactNav}</button>
           <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
         </div>
       </div>
@@ -999,6 +1011,61 @@ function Wishlist({ wishlistIds, onToggleWishlist, openProduct, setView }) {
   );
 }
 
+function Contact() {
+  const { t } = useLang();
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
+
+  const submit = async () => {
+    setError("");
+    if (!name.trim() || !email.trim() || !message.trim()) {
+      setError(t.fillAllFields);
+      return;
+    }
+    setSending(true);
+    try {
+      await api("/support", { method: "POST", body: JSON.stringify({ name, email, subject, message }) });
+      setSent(true);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (sent) {
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
+        <Check size={30} color={C.ink} style={{ marginBottom: 16 }} />
+        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 8 }}>{t.messageSent}</h1>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted }}>{t.messageSentNote}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 480, margin: "0 auto", padding: "48px 24px 64px" }}>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 6 }}>{t.contactUs}</h1>
+      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>{t.contactSubtitle}</p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <input placeholder={t.yourName} value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
+        <input placeholder={t.emailOptional.replace(/\s*\(.*\)/, "")} value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
+        <input placeholder={t.subjectOptional} value={subject} onChange={(e) => setSubject(e.target.value)} style={inputStyle} />
+        <textarea placeholder={t.yourMessage} value={message} onChange={(e) => setMessage(e.target.value)} rows={5} style={{ ...inputStyle, resize: "vertical", fontFamily: "Inter, sans-serif" }} />
+      </div>
+      {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginTop: 12 }}>{error}</p>}
+      <button onClick={submit} disabled={sending} style={{ marginTop: 16, width: "100%", background: C.ink, color: C.warm, border: "none", padding: "14px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: sending ? "default" : "pointer", opacity: sending ? 0.7 : 1 }}>
+        {sending ? t.sending : t.sendMessage}
+      </button>
+    </div>
+  );
+}
+
 function TrackOrder() {
   const [orderId, setOrderId] = useState("");
   const [contact, setContact] = useState("");
@@ -1168,6 +1235,7 @@ export default function SadaarMarketplace() {
       checkout: ["Checkout — SADAAR", null],
       track: ["Track your order — SADAAR", "Check the status of your SADAAR order."],
       wishlist: ["Your wishlist — SADAAR", null],
+      contact: ["Contact us — SADAAR", null],
     };
     const entry = titles[view.type];
     if (entry) setPageMeta(...entry);
@@ -1246,6 +1314,7 @@ export default function SadaarMarketplace() {
           {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
           {view.type === "track" && <TrackOrder />}
+          {view.type === "contact" && <Contact />}
           {view.type === "wishlist" && <Wishlist wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} openProduct={openProduct} setView={setView} />}
 
           <Footer setView={setView} />
