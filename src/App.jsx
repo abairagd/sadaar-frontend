@@ -20,6 +20,12 @@ const FONTS = `
 * { box-sizing: border-box; }
 body { overflow-x: hidden; }
 
+button { transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease; }
+button:hover:not(:disabled) { opacity: 0.85; }
+a:hover { opacity: 0.85; }
+.sadaar-card-hover { transition: transform 0.2s ease; }
+.sadaar-card-hover:hover { transform: translateY(-3px); }
+
 @media (max-width: 680px) {
   .sadaar-hero { flex-direction: column !important; gap: 24px !important; padding-left: 16px !important; padding-right: 16px !important; }
   .sadaar-hero-grid { flex: 1 1 100% !important; }
@@ -99,7 +105,7 @@ function Swatch({ product, height = 260 }) {
 
 function ProductCard({ product, onOpen }) {
   return (
-    <button onClick={() => onOpen(product.id)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif" }}>
+    <button className="sadaar-card-hover" onClick={() => onOpen(product.id)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif" }}>
       <Swatch product={product} />
       <div style={{ paddingTop: 10 }}>
         <p style={{ margin: 0, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{product.brand_name}</p>
@@ -167,7 +173,7 @@ function Header({ setView, cartCount, onSearchClick }) {
 
 const navBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0" };
 
-function Footer() {
+function Footer({ setView }) {
   return (
     <footer style={{ background: C.ink, color: C.sand, marginTop: 64 }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px", display: "flex", flexWrap: "wrap", gap: 40, justifyContent: "space-between" }}>
@@ -177,7 +183,14 @@ function Footer() {
         </div>
         <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>Shop</div>
-          {CATEGORIES.map((c) => <div key={c}>{c}</div>)}
+          {CATEGORIES.map((c) => (
+            <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{c}</button>
+          ))}
+        </div>
+        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
+          <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>SADAAR</div>
+          <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>Track your order</button>
+          <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>Join as a brand</a>
         </div>
       </div>
       <div style={{ borderTop: "1px solid #2C3D30", padding: "16px 24px", fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8C9186", textAlign: "center" }}>© 2026 SADAAR. Every product ships direct from its brand.</div>
@@ -233,6 +246,23 @@ function Home({ setView, openProduct, products, brands, loading, error }) {
                 );
               })}
             </div>
+          </section>
+
+          <section style={{ maxWidth: 900, margin: "0 auto", padding: "56px 24px 8px", textAlign: "center" }}>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>Our story</p>
+            <h2 style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 500, fontSize: "clamp(22px, 3vw, 30px)", color: C.ink, lineHeight: 1.4, margin: "0 auto", maxWidth: 720 }}>
+              Saudi fashion has never lacked talent — it's lacked a single front door. SADAAR brings independent Saudi labels together under one roof, without asking any of them to change what makes them theirs.
+            </h2>
+          </section>
+
+          <section style={{ maxWidth: 1180, margin: "48px auto 0", padding: "36px 24px", background: C.deep, color: C.sand, display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, margin: 0 }}>Are you a Saudi fashion brand?</p>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#C9CDBF", marginTop: 6 }}>Join SADAAR and reach shoppers looking for exactly what you make.</p>
+            </div>
+            <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ background: C.sand, color: C.ink, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
+              Apply to sell
+            </a>
           </section>
 
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px 8px" }}>
@@ -788,7 +818,7 @@ export default function SadaarMarketplace() {
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
           {view.type === "track" && <TrackOrder />}
 
-          <Footer />
+          <Footer setView={setView} />
         </>
       )}
     </div>
