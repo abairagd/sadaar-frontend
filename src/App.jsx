@@ -513,18 +513,6 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
             </div>
           </section>
 
-          <section style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px 8px" }}>
-            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, marginBottom: 18 }}>{t.shopByCategory}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
-              {CATEGORIES.map((c) => {
-                const tone = catTone[c];
-                return (
-                  <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ background: tone.bg, border: "none", padding: "34px 18px", cursor: "pointer", fontFamily: "Fraunces, serif", fontSize: 17, color: tone.fg, textAlign: "left" }}>{categoryLabel(c)}</button>
-                );
-              })}
-            </div>
-          </section>
-
           <section style={{ maxWidth: 900, margin: "0 auto", padding: "56px 24px 8px", textAlign: "center" }}>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>{t.ourStory}</p>
             <h2 style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 500, fontSize: "clamp(22px, 3vw, 30px)", color: C.ink, lineHeight: 1.4, margin: "0 auto", maxWidth: 720 }}>
