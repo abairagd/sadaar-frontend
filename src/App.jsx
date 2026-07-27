@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
-import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Menu, Check, Loader2, Heart } from "lucide-react";
+import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Menu, Check, Loader2, Heart, Sparkles } from "lucide-react";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
 
@@ -137,7 +137,7 @@ const T = {
     heroTitle1: "The home of", heroTitle2: "Saudi fashion.",
     heroSubtitle: "Independent Saudi labels, one checkout. Every piece is shipped and stood behind by the brand that made it.",
     shopTheEdit: "Shop the edit",
-    curatedBrands: "Curated brands", viewAll: "View all →",
+    curatedBrands: "Curated brands", viewAll: "View all →", spotlight: "Spotlight",
     shopByCategory: "Shop by category", thisWeeksEdit: "This week's edit",
     ourStory: "Our story",
     ourStoryText: "Saudi fashion has never lacked talent — it's lacked a single front door. SADAAR brings independent Saudi labels together under one roof, without asking any of them to change what makes them theirs.",
@@ -183,7 +183,7 @@ const T = {
     heroTitle1: "بيت", heroTitle2: "الأزياء السعودية.",
     heroSubtitle: "ماركات سعودية مستقلة، سلة شراء واحدة. كل قطعة تُشحن ويقف خلفها صانعها.",
     shopTheEdit: "تسوقي التشكيلة",
-    curatedBrands: "ماركات منتقاة", viewAll: "عرض الكل ←",
+    curatedBrands: "ماركات منتقاة", viewAll: "عرض الكل ←", spotlight: "مميزة",
     shopByCategory: "تسوقي حسب الفئة", thisWeeksEdit: "تشكيلة هذا الأسبوع",
     ourStory: "قصتنا",
     ourStoryText: "الأزياء السعودية لم تفتقر يومًا للموهبة، بل افتقرت لباب واحد يجمعها. سدّار يجمع الماركات السعودية المستقلة تحت سقف واحد، دون أن يطلب من أي منها أن تتغير عمّا يميزها.",
@@ -404,6 +404,11 @@ function Footer({ setView }) {
 function Home({ setView, openProduct, products, brands, loading, error, wishlistIds, onToggleWishlist }) {
   const featured = products.slice(0, 8);
   const { t, categoryLabel } = useLang();
+  const [spotlights, setSpotlights] = useState([]);
+
+  useEffect(() => {
+    api("/spotlight/active").then(setSpotlights).catch(() => {});
+  }, []);
   return (
     <div>
       <section className="sadaar-hero" style={{ position: "relative", height: "clamp(420px, 70vh, 640px)", overflow: "hidden", marginBottom: 8 }}>
@@ -424,6 +429,28 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 28, background: C.warm, color: C.ink, border: "none", padding: "13px 28px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", width: "fit-content" }}>{t.shopTheEdit}</button>
         </div>
       </section>
+
+      {spotlights.length > 0 && (
+        <section style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+            <Sparkles size={16} color={C.bronze} />
+            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink, margin: 0 }}>{t.spotlight}</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
+            {spotlights.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setView({ type: "browse", cat: s.category })}
+                style={{ textAlign: "left", background: C.deep, color: C.sand, border: "none", padding: 20, cursor: "pointer" }}
+              >
+                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: C.bronze, margin: 0 }}>{t.spotlight}</p>
+                <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, margin: "6px 0" }}>{s.brand_name}</p>
+                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#C9CDBF", margin: 0 }}>{s.brand_description}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {loading && <Loading label="Loading brands and products from SADAAR..." />}
       {error && <ErrorBox message={error} />}
