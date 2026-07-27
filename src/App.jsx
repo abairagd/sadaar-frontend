@@ -457,21 +457,26 @@ function Gallery({ product }) {
   );
 }
 
-function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWishlist }) {
+function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWishlist, openProduct, wishlistIds }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [variantId, setVariantId] = useState(null);
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
+  const [related, setRelated] = useState([]);
 
   useEffect(() => {
     setLoading(true);
+    setRelated([]);
     api(`/products/${productId}`)
       .then((p) => {
         setProduct(p);
         setVariantId(p.variants?.[0]?.id ?? null);
         setPageMeta(`${p.name} by ${p.brand_name} — SADAAR`, p.description ? p.description.slice(0, 160) : `${p.name} from ${p.brand_name}, available on SADAAR.`);
+        api(`/products?category=${encodeURIComponent(p.category)}`)
+          .then((list) => setRelated(list.filter((item) => item.id !== p.id).slice(0, 4)))
+          .catch(() => {});
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -528,6 +533,17 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 16, borderTop: `1px solid ${C.line}`, paddingTop: 16 }}>Shipped directly by {product.brand_name}, curated and guaranteed by SADAAR.</p>
         </div>
       </div>
+
+      {related.length > 0 && openProduct && (
+        <div style={{ marginTop: 56 }}>
+          <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink, marginBottom: 18 }}>You might also like</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "24px 20px" }}>
+            {related.map((p) => (
+              <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={(wishlistIds || []).includes(p.id)} onToggleWishlist={onToggleWishlist} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -985,7 +1001,7 @@ export default function SadaarMarketplace() {
               </div>
             </div>
           )}
-          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} wishlisted={wishlistIds.includes(view.id)} onToggleWishlist={toggleWishlist} />}
+          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} wishlisted={wishlistIds.includes(view.id)} onToggleWishlist={toggleWishlist} openProduct={openProduct} wishlistIds={wishlistIds} />}
           {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
           {view.type === "track" && <TrackOrder />}
