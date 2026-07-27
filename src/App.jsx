@@ -48,6 +48,23 @@ function money(n) {
   return `SAR ${Number(n).toLocaleString()}`;
 }
 
+// Updates the browser tab title and meta description as the user navigates.
+// Note: since this is a client-rendered app, search engine crawlers that don't
+// execute JavaScript won't see these per-page values — this mainly helps
+// browser tabs/history/bookmarks and crawlers that do render JS (like Google).
+function setPageMeta(title, description) {
+  document.title = title;
+  if (description) {
+    let tag = document.querySelector('meta[name="description"]');
+    if (!tag) {
+      tag = document.createElement("meta");
+      tag.setAttribute("name", "description");
+      document.head.appendChild(tag);
+    }
+    tag.setAttribute("content", description);
+  }
+}
+
 async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -303,7 +320,11 @@ function ProductDetail({ productId, onBack, onAddToCart }) {
   useEffect(() => {
     setLoading(true);
     api(`/products/${productId}`)
-      .then((p) => { setProduct(p); setVariantId(p.variants?.[0]?.id ?? null); })
+      .then((p) => {
+        setProduct(p);
+        setVariantId(p.variants?.[0]?.id ?? null);
+        setPageMeta(`${p.name} by ${p.brand_name} — SADAAR`, p.description ? p.description.slice(0, 160) : `${p.name} from ${p.brand_name}, available on SADAAR.`);
+      })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [productId]);
@@ -680,6 +701,20 @@ export default function SadaarMarketplace() {
   }, []);
 
   const openProduct = useCallback((id) => { setView({ type: "product", id }); window.scrollTo?.(0, 0); }, []);
+
+  useEffect(() => {
+    const titles = {
+      home: ["SADAAR — Home of Saudi Fashion", "Independent Saudi fashion brands, one curated marketplace."],
+      browse: [view.cat ? `${view.cat} — SADAAR` : "Shop all — SADAAR", `Shop ${view.cat || "all categories"} from independent Saudi fashion brands on SADAAR.`],
+      brands: ["Our brands — SADAAR", "Meet the independent Saudi fashion labels curated on SADAAR."],
+      cart: ["Your bag — SADAAR", null],
+      checkout: ["Checkout — SADAAR", null],
+      track: ["Track your order — SADAAR", "Check the status of your SADAAR order."],
+    };
+    const entry = titles[view.type];
+    if (entry) setPageMeta(...entry);
+    // "product" view sets its own title once the product loads (see ProductDetail).
+  }, [view]);
 
   const addToCart = (product, variant, qty) => {
     setCart((prev) => {
