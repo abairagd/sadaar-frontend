@@ -107,9 +107,20 @@ function Tag({ text }) {
   );
 }
 
-function Swatch({ product, height = 260 }) {
+function Swatch({ product, height = 260, imageUrl }) {
   const tone = catTone[product.category] || catTone.Contemporary;
   const brandName = product.brand_name || product.brandName || "SADAAR";
+  const src = imageUrl || product.image_url || product.images?.[0]?.url;
+
+  if (src) {
+    return (
+      <div style={{ position: "relative", height, background: tone.bg, overflow: "hidden" }}>
+        <img src={src} alt={product.name || brandName} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <Tag text={brandName} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: "relative", height, background: tone.bg, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <span style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 500, fontSize: height * 0.62, color: tone.fg, opacity: 0.16, lineHeight: 1 }}>
@@ -374,6 +385,34 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   );
 }
 
+function Gallery({ product }) {
+  const images = product.images || [];
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  if (images.length === 0) {
+    return <Swatch product={product} height={460} />;
+  }
+
+  return (
+    <div>
+      <Swatch product={product} height={460} imageUrl={images[activeIdx].url} />
+      {images.length > 1 && (
+        <div style={{ display: "flex", gap: 8, marginTop: 10, overflowX: "auto" }}>
+          {images.map((img, idx) => (
+            <button
+              key={img.id}
+              onClick={() => setActiveIdx(idx)}
+              style={{ padding: 0, border: `2px solid ${idx === activeIdx ? C.ink : "transparent"}`, background: "none", cursor: "pointer", flexShrink: 0 }}
+            >
+              <img src={img.url} alt="" style={{ width: 60, height: 60, objectFit: "cover", display: "block" }} />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWishlist }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -409,7 +448,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
         </button>
       </div>
       <div className="sadaar-product-layout" style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
-        <div className="sadaar-product-image" style={{ flex: "1 1 380px" }}><Swatch product={product} height={460} /></div>
+        <div className="sadaar-product-image" style={{ flex: "1 1 380px" }}><Gallery product={product} /></div>
         <div style={{ flex: "1 1 320px" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze }}>{product.brand_name}</p>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: 30, color: C.ink, margin: "6px 0" }}>{product.name}</h1>
