@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
-import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Menu, Check, Loader2, Heart, Sparkles } from "lucide-react";
+import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, Sparkles } from "lucide-react";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
 
@@ -29,6 +29,9 @@ a:hover { opacity: 0.85; }
 .sadaar-card-hover:hover { transform: translateY(-3px); }
 
 @media (max-width: 680px) {
+  .sadaar-header-row { flex-wrap: wrap !important; }
+  .sadaar-header-left { width: 100% !important; justify-content: space-between !important; }
+  .sadaar-top-nav { gap: 14px !important; overflow-x: auto !important; flex-wrap: nowrap !important; width: 100%; padding-top: 4px; }
   .sadaar-hero { height: clamp(320px, 55vh, 460px) !important; }
   .sadaar-hero > div { padding-left: 16px !important; padding-right: 16px !important; }
   .sadaar-browse-layout { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
@@ -326,18 +329,23 @@ function ErrorBox({ message }) {
 }
 
 function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   const { t, lang, toggleLang, categoryLabel } = useLang();
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 20, background: C.warm, borderBottom: `1px solid ${C.line}` }}>
-      <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-        <button onClick={() => setMenuOpen((m) => !m)} style={{ background: "none", border: "none", cursor: "pointer" }} aria-label="Menu">
-          <Menu size={20} color={C.ink} />
-        </button>
-        <button onClick={() => setView({ type: "home" })} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center" }}>
-          <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 26, letterSpacing: "0.04em", color: C.ink }}>SADAAR</div>
-          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.bronze, marginTop: -2 }}>{t.tagline}</div>
-        </button>
+      <div className="sadaar-header-row" style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div className="sadaar-header-left" style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <button onClick={() => setView({ type: "home" })} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "start" }}>
+            <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 26, letterSpacing: "0.04em", color: C.ink }}>SADAAR</div>
+            <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.bronze, marginTop: -2 }}>{t.tagline}</div>
+          </button>
+          <nav style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }} className="sadaar-top-nav">
+            <button onClick={() => setView({ type: "home" })} style={boldNavBtn}>{t.home}</button>
+            {CATEGORIES.map((c) => (
+              <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={boldNavBtn}>{categoryLabel(c)}</button>
+            ))}
+            <button onClick={() => setView({ type: "brands" })} style={boldNavBtn}>{t.brandsNav}</button>
+          </nav>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <button onClick={toggleLang} style={{ background: "none", border: `1px solid ${C.line}`, borderRadius: 3, padding: "4px 9px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.char }}>
             {lang === "en" ? "ع" : "EN"}
@@ -357,20 +365,12 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
           </button>
         </div>
       </div>
-      {menuOpen && (
-        <div style={{ borderTop: `1px solid ${C.line}`, padding: "14px 24px 18px", display: "flex", flexWrap: "wrap", gap: "10px 22px", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
-          <button onClick={() => { setView({ type: "home" }); setMenuOpen(false); }} style={navBtn}>{t.home}</button>
-          {CATEGORIES.map((c) => (
-            <button key={c} onClick={() => { setView({ type: "browse", cat: c }); setMenuOpen(false); }} style={navBtn}>{categoryLabel(c)}</button>
-          ))}
-          <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>{t.brandsNav}</button>
-        </div>
-      )}
     </header>
   );
 }
 
 const navBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0" };
+const boldNavBtn = { background: "none", border: "none", cursor: "pointer", color: C.ink, padding: "4px 0", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em" };
 
 function Footer({ setView }) {
   const { t, categoryLabel } = useLang();
@@ -420,7 +420,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           playsInline
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         >
-          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/site-assets/Luxury%20fashion%20advertisement%20shot%20on%20ARRI%20Alexa%20with%20anamorphic%20lenses,%20cinematic%2035mm%20grain,%20warm%20golden%20tones%20and%20deep%20shadows,%20high-end%20commercial%20aesthetic.%20Middle%20Eastern%20female%20models%20in%20designer%20fashion%20shoot.%20First%20model_%20tall,%20late.mp4" type="video/mp4" />
+          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/product-images/SADAAR%20MP.mp4" type="video/mp4" />
         </video>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(22,38,28,0.25) 0%, rgba(22,38,28,0.6) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%", maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
