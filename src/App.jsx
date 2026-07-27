@@ -29,8 +29,8 @@ a:hover { opacity: 0.85; }
 .sadaar-card-hover:hover { transform: translateY(-3px); }
 
 @media (max-width: 680px) {
-  .sadaar-hero { flex-direction: column !important; gap: 24px !important; padding-left: 16px !important; padding-right: 16px !important; }
-  .sadaar-hero-grid { flex: 1 1 100% !important; }
+  .sadaar-hero { height: clamp(320px, 55vh, 460px) !important; }
+  .sadaar-hero > div { padding-left: 16px !important; padding-right: 16px !important; }
   .sadaar-browse-layout { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
   .sadaar-browse-sidebar { width: 100% !important; }
   .sadaar-browse-filters { display: flex !important; flex-wrap: wrap !important; gap: 16px 24px !important; margin-bottom: 20px !important; }
@@ -406,17 +406,22 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
   const { t, categoryLabel } = useLang();
   return (
     <div>
-      <section className="sadaar-hero" style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 24px 40px", display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center" }}>
-        <div style={{ flex: "1 1 380px" }}>
+      <section className="sadaar-hero" style={{ position: "relative", height: "clamp(420px, 70vh, 640px)", overflow: "hidden", marginBottom: 8 }}>
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+        >
+          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/product-images/SADAAR%20MP.mp4" type="video/mp4" />
+        </video>
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(22,38,28,0.25) 0%, rgba(22,38,28,0.6) 100%)" }} />
+        <div style={{ position: "relative", zIndex: 1, height: "100%", maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>{t.eyebrow}</p>
-          <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(34px, 5vw, 56px)", lineHeight: 1.05, color: C.ink, margin: 0 }}>{t.heroTitle1}<br />{t.heroTitle2}</h1>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: C.muted, marginTop: 20, maxWidth: 420, lineHeight: 1.6 }}>{t.heroSubtitle}</p>
-          <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 28, background: C.ink, color: C.warm, border: "none", padding: "13px 28px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{t.shopTheEdit}</button>
-        </div>
-        <div className="sadaar-hero-grid" style={{ flex: "1 1 340px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-          {featured.slice(0, 4).map((p, i) => (
-            <div key={p.id} style={{ marginTop: i % 2 === 0 ? 30 : 0 }}><Swatch product={p} height={i === 1 ? 260 : 200} /></div>
-          ))}
+          <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(34px, 6vw, 64px)", lineHeight: 1.05, color: C.warm, margin: 0 }}>{t.heroTitle1}<br />{t.heroTitle2}</h1>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: "#E7E2D3", marginTop: 20, maxWidth: 420, lineHeight: 1.6 }}>{t.heroSubtitle}</p>
+          <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 28, background: C.warm, color: C.ink, border: "none", padding: "13px 28px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", width: "fit-content" }}>{t.shopTheEdit}</button>
         </div>
       </section>
 
