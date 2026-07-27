@@ -420,7 +420,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           playsInline
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         >
-          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/product-images/SADAAR%20MP.mp4" type="video/mp4" />
+          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/site-assets/Luxury%20fashion%20advertisement%20shot%20on%20ARRI%20Alexa%20with%20anamorphic%20lenses,%20cinematic%2035mm%20grain,%20warm%20golden%20tones%20and%20deep%20shadows,%20high-end%20commercial%20aesthetic.%20Middle%20Eastern%20female%20models%20in%20designer%20fashion%20shoot.%20First%20model_%20tall,%20late.mp4" type="video/mp4" />
         </video>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(22,38,28,0.25) 0%, rgba(22,38,28,0.6) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%", maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
