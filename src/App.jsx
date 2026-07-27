@@ -57,6 +57,21 @@ const SUBCATEGORIES_BY_CATEGORY = {
   Women: ["Shoes", "Accessories", "Abayas", "Streetwear", "Shirts", "Pants", "Swimwear", "Dresses"],
 };
 
+// Product types are the finest taxonomy level, keyed by subcategory. Same
+// philosophy as subcategories — free text on the backend, curated options
+// here for a consistent dropdown. Add more anytime by editing this list.
+const PRODUCT_TYPES_BY_SUBCATEGORY = {
+  Shirts: ["T-Shirts", "Button-Up Shirts", "Polo Shirts", "Sweatshirts", "Hoodies"],
+  Pants: ["Jeans", "Cargo Pants", "Chinos", "Joggers", "Shorts"],
+  Streetwear: ["Hoodies", "Sweatshirts", "Joggers", "Bomber Jackets"],
+  Swimwear: ["Swim Trunks", "Swim Shorts", "One-Piece", "Bikini"],
+  Thobes: ["Classic Thobe", "Modern Thobe"],
+  Abayas: ["Classic Abaya", "Embroidered Abaya", "Kimono Abaya"],
+  Dresses: ["Maxi Dress", "Midi Dress", "Evening Dress"],
+  Shoes: ["Sneakers", "Sandals", "Boots", "Heels", "Loafers"],
+  Accessories: ["Jewelry", "Bags", "Belts", "Watches", "Sunglasses"],
+};
+
 const catTone = {
   Men: { bg: C.sand, fg: C.ink },
   Women: { bg: "#EDE3D0", fg: C.deep },
@@ -131,6 +146,11 @@ const CATEGORY_LABELS = {
 const SUBCATEGORY_LABELS = {
   en: { Shoes: "Shoes", Accessories: "Accessories", Streetwear: "Streetwear", Shirts: "Shirts", Pants: "Pants", Swimwear: "Swimwear", Thobes: "Thobes", Abayas: "Abayas", Dresses: "Dresses", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels" },
   ar: { Shoes: "أحذية", Accessories: "إكسسوارات", Streetwear: "ستريت وير", Shirts: "قمصان", Pants: "بناطيل", Swimwear: "ملابس سباحة", Thobes: "أثواب", Abayas: "عبايات", Dresses: "فساتين", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي" },
+};
+
+const PRODUCT_TYPE_LABELS = {
+  en: { "T-Shirts": "T-Shirts", "Button-Up Shirts": "Button-Up Shirts", "Polo Shirts": "Polo Shirts", Sweatshirts: "Sweatshirts", Hoodies: "Hoodies", Jeans: "Jeans", "Cargo Pants": "Cargo Pants", Chinos: "Chinos", Joggers: "Joggers", Shorts: "Shorts", "Bomber Jackets": "Bomber Jackets", "Swim Trunks": "Swim Trunks", "Swim Shorts": "Swim Shorts", "One-Piece": "One-Piece", Bikini: "Bikini", "Classic Thobe": "Classic Thobe", "Modern Thobe": "Modern Thobe", "Classic Abaya": "Classic Abaya", "Embroidered Abaya": "Embroidered Abaya", "Kimono Abaya": "Kimono Abaya", "Maxi Dress": "Maxi Dress", "Midi Dress": "Midi Dress", "Evening Dress": "Evening Dress", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels", Loafers: "Loafers", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sunglasses: "Sunglasses" },
+  ar: { "T-Shirts": "تيشيرتات", "Button-Up Shirts": "قمصان بأزرار", "Polo Shirts": "قمصان بولو", Sweatshirts: "سويت شيرت", Hoodies: "هوديات", Jeans: "جينز", "Cargo Pants": "بنطال كارجو", Chinos: "بنطال تشينو", Joggers: "بنطال رياضي", Shorts: "شورت", "Bomber Jackets": "جاكيت بومبر", "Swim Trunks": "شورت سباحة", "Swim Shorts": "شورت سباحة", "One-Piece": "قطعة واحدة", Bikini: "بيكيني", "Classic Thobe": "ثوب كلاسيكي", "Modern Thobe": "ثوب عصري", "Classic Abaya": "عباية كلاسيكية", "Embroidered Abaya": "عباية مطرزة", "Kimono Abaya": "عباية كيمونو", "Maxi Dress": "فستان طويل", "Midi Dress": "فستان متوسط", "Evening Dress": "فستان سهرة", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي", Loafers: "لوفرز", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sunglasses: "نظارات شمسية" },
 };
 
 const T = {
@@ -238,7 +258,7 @@ function getLang() {
   }
 }
 
-const LangContext = createContext({ lang: "en", t: T.en, dir: "ltr", categoryLabel: (c) => c, subcategoryLabel: (c) => c, toggleLang: () => {} });
+const LangContext = createContext({ lang: "en", t: T.en, dir: "ltr", categoryLabel: (c) => c, subcategoryLabel: (c) => c, productTypeLabel: (c) => c, toggleLang: () => {} });
 function useLang() {
   return useContext(LangContext);
 }
@@ -420,7 +440,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           playsInline
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
         >
-          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/site-assets/Luxury%20fashion%20advertisement%20shot%20on%20ARRI%20Alexa%20with%20anamorphic%20lenses,%20cinematic%2035mm%20grain,%20warm%20golden%20tones%20and%20deep%20shadows,%20high-end%20commercial%20aesthetic.%20Middle%20Eastern%20female%20models%20in%20designer%20fashion%20shoot.%20First%20model_%20tall,%20late.mp4" type="video/mp4" />
+          <source src="https://zqkxqzzakahnewjjlufa.supabase.co/storage/v1/object/public/product-images/SADAAR%20MP.mp4" type="video/mp4" />
         </video>
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(22,38,28,0.25) 0%, rgba(22,38,28,0.6) 100%)" }} />
         <div style={{ position: "relative", zIndex: 1, height: "100%", maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
@@ -517,6 +537,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
 function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist }) {
   const [cat, setCat] = useState(initialCat || "all");
   const [subcat, setSubcat] = useState("all");
+  const [ptype, setPtype] = useState("all");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
   const [search, setSearch] = useState("");
@@ -525,11 +546,13 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { t, categoryLabel, subcategoryLabel } = useLang();
+  const { t, categoryLabel, subcategoryLabel, productTypeLabel } = useLang();
 
-  // Reset subcategory whenever the top-level category changes, since the
-  // available subcategory list depends on which category is selected.
+  // Reset subcategory whenever the top-level category changes, and reset
+  // product type whenever the subcategory changes — each level depends on
+  // the one above it.
   useEffect(() => { setSubcat("all"); }, [cat]);
+  useEffect(() => { setPtype("all"); }, [subcat]);
 
   useEffect(() => {
     setLoading(true);
@@ -538,6 +561,7 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
       const params = new URLSearchParams();
       if (cat !== "all") params.set("category", cat);
       if (subcat !== "all") params.set("subcategory", subcat);
+      if (ptype !== "all") params.set("productType", ptype);
       if (brand !== "all") params.set("brandId", brand);
       if (sort !== "featured") params.set("sort", sort);
       if (search.trim()) params.set("search", search.trim());
@@ -549,14 +573,14 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
         .finally(() => setLoading(false));
     }, 350); // debounce so typing in search/price doesn't fire a request per keystroke
     return () => clearTimeout(handle);
-  }, [cat, subcat, brand, sort, search, minPrice, maxPrice]);
+  }, [cat, subcat, ptype, brand, sort, search, minPrice, maxPrice]);
 
   const activeFilterCount = [
-    cat !== "all", subcat !== "all", brand !== "all", search.trim(), minPrice, maxPrice,
+    cat !== "all", subcat !== "all", ptype !== "all", brand !== "all", search.trim(), minPrice, maxPrice,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
-    setCat("all"); setSubcat("all"); setBrand("all"); setSort("featured"); setSearch(""); setMinPrice(""); setMaxPrice("");
+    setCat("all"); setSubcat("all"); setPtype("all"); setBrand("all"); setSort("featured"); setSearch(""); setMinPrice(""); setMaxPrice("");
   };
 
   return (
@@ -582,6 +606,16 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
               {["all", ...SUBCATEGORIES_BY_CATEGORY[cat]].map((s) => (
                 <button key={s} onClick={() => setSubcat(s)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: subcat === s ? C.ink : C.muted, fontWeight: subcat === s ? 600 : 400 }}>{s === "all" ? t.all : subcategoryLabel(s)}</button>
+              ))}
+            </div>
+          </>
+        )}
+        {subcat !== "all" && (PRODUCT_TYPES_BY_SUBCATEGORY[subcat] || []).length > 0 && (
+          <>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{subcategoryLabel(subcat)}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+              {["all", ...PRODUCT_TYPES_BY_SUBCATEGORY[subcat]].map((pt) => (
+                <button key={pt} onClick={() => setPtype(pt)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: ptype === pt ? C.ink : C.muted, fontWeight: ptype === pt ? 600 : 400 }}>{pt === "all" ? t.all : productTypeLabel(pt)}</button>
               ))}
             </div>
           </>
@@ -673,7 +707,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [related, setRelated] = useState([]);
-  const { t, categoryLabel, subcategoryLabel } = useLang();
+  const { t, categoryLabel, subcategoryLabel, productTypeLabel } = useLang();
 
   useEffect(() => {
     setLoading(true);
@@ -710,7 +744,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
         <div style={{ flex: "1 1 320px" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze }}>{product.brand_name}</p>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: 30, color: C.ink, margin: "6px 0" }}>{product.name}</h1>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginBottom: 12 }}>{categoryLabel(product.category)}{product.subcategory ? ` · ${subcategoryLabel(product.subcategory)}` : ""}</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginBottom: 12 }}>{categoryLabel(product.category)}{product.subcategory ? ` · ${subcategoryLabel(product.subcategory)}` : ""}{product.product_type ? ` · ${productTypeLabel(product.product_type)}` : ""}</p>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 18, color: C.char, marginBottom: 20 }}>{money(product.price)}</p>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, lineHeight: 1.6, marginBottom: 24 }}>{product.description}</p>
 
@@ -1228,6 +1262,7 @@ export default function SadaarMarketplace() {
     dir: lang === "ar" ? "rtl" : "ltr",
     categoryLabel: (c) => CATEGORY_LABELS[lang][c] || c,
     subcategoryLabel: (s) => SUBCATEGORY_LABELS[lang][s] || s,
+    productTypeLabel: (p) => PRODUCT_TYPE_LABELS[lang][p] || p,
     toggleLang,
   }), [lang, toggleLang]);
 
