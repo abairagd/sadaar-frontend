@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Menu, Check, Loader2 } from "lucide-react";
+import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Menu, Check, Loader2, Heart } from "lucide-react";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
 
@@ -71,6 +71,23 @@ function setPageMeta(title, description) {
   }
 }
 
+// Device-based wishlist (no customer accounts exist yet, so this can't sync
+// across devices — it's stored per browser via localStorage).
+const WISHLIST_KEY = "sadaar_wishlist";
+
+function getWishlistIds() {
+  try {
+    const raw = localStorage.getItem(WISHLIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function setWishlistIds(ids) {
+  localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+}
+
 async function api(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -103,16 +120,27 @@ function Swatch({ product, height = 260 }) {
   );
 }
 
-function ProductCard({ product, onOpen }) {
+function ProductCard({ product, onOpen, wishlisted, onToggleWishlist }) {
   return (
-    <button className="sadaar-card-hover" onClick={() => onOpen(product.id)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif" }}>
-      <Swatch product={product} />
-      <div style={{ paddingTop: 10 }}>
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{product.brand_name}</p>
-        <p style={{ margin: "2px 0 0", fontSize: 15, color: C.char, fontFamily: "Fraunces, serif" }}>{product.name}</p>
-        <p style={{ margin: "4px 0 0", fontSize: 14, color: C.ink, fontWeight: 500 }}>{money(product.price)}</p>
-      </div>
-    </button>
+    <div style={{ position: "relative" }}>
+      <button className="sadaar-card-hover" onClick={() => onOpen(product.id)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "Inter, sans-serif", width: "100%" }}>
+        <Swatch product={product} />
+        <div style={{ paddingTop: 10 }}>
+          <p style={{ margin: 0, fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{product.brand_name}</p>
+          <p style={{ margin: "2px 0 0", fontSize: 15, color: C.char, fontFamily: "Fraunces, serif" }}>{product.name}</p>
+          <p style={{ margin: "4px 0 0", fontSize: 14, color: C.ink, fontWeight: 500 }}>{money(product.price)}</p>
+        </div>
+      </button>
+      {onToggleWishlist && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleWishlist(product.id); }}
+          aria-label="Toggle wishlist"
+          style={{ position: "absolute", top: 10, right: 10, background: "rgba(251,248,241,0.9)", border: "none", borderRadius: "50%", width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+        >
+          <Heart size={15} color={C.ink} fill={wishlisted ? C.ink : "none"} />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -134,7 +162,7 @@ function ErrorBox({ message }) {
   );
 }
 
-function Header({ setView, cartCount, onSearchClick }) {
+function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 20, background: C.warm, borderBottom: `1px solid ${C.line}` }}>
@@ -148,6 +176,12 @@ function Header({ setView, cartCount, onSearchClick }) {
         </button>
         <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
           <button onClick={onSearchClick} style={{ background: "none", border: "none", cursor: "pointer" }} aria-label="Search"><Search size={19} color={C.ink} /></button>
+          <button onClick={() => setView({ type: "wishlist" })} style={{ background: "none", border: "none", cursor: "pointer", position: "relative" }} aria-label="Wishlist">
+            <Heart size={19} color={C.ink} />
+            {wishlistCount > 0 && (
+              <span style={{ position: "absolute", top: -6, right: -8, background: C.ink, color: C.warm, fontSize: 10, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{wishlistCount}</span>
+            )}
+          </button>
           <button onClick={() => setView({ type: "cart" })} style={{ background: "none", border: "none", cursor: "pointer", position: "relative" }} aria-label="Cart">
             <ShoppingBag size={19} color={C.ink} />
             {cartCount > 0 && (
@@ -164,6 +198,7 @@ function Header({ setView, cartCount, onSearchClick }) {
             <button key={c} onClick={() => { setView({ type: "browse", cat: c }); setMenuOpen(false); }} style={navBtn}>{c}</button>
           ))}
           <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>Brands</button>
+          <button onClick={() => { setView({ type: "wishlist" }); setMenuOpen(false); }} style={navBtn}>Wishlist</button>
           <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>Track order</button>
         </div>
       )}
@@ -198,7 +233,7 @@ function Footer({ setView }) {
   );
 }
 
-function Home({ setView, openProduct, products, brands, loading, error }) {
+function Home({ setView, openProduct, products, brands, loading, error, wishlistIds, onToggleWishlist }) {
   const featured = products.slice(0, 8);
   return (
     <div>
@@ -268,7 +303,7 @@ function Home({ setView, openProduct, products, brands, loading, error }) {
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px 8px" }}>
             <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, marginBottom: 18 }}>This week's edit</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "28px 20px" }}>
-              {featured.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} />)}
+              {featured.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} />)}
             </div>
           </section>
         </>
@@ -277,7 +312,7 @@ function Home({ setView, openProduct, products, brands, loading, error }) {
   );
 }
 
-function Browse({ initialCat, openProduct, brands }) {
+function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist }) {
   const [cat, setCat] = useState(initialCat || "all");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
@@ -330,7 +365,7 @@ function Browse({ initialCat, openProduct, brands }) {
         {error && <ErrorBox message={error} />}
         {!loading && !error && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "28px 20px" }}>
-            {products.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} />)}
+            {products.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} />)}
           </div>
         )}
         {!loading && !error && products.length === 0 && <p style={{ fontFamily: "Inter, sans-serif", color: C.muted }}>No pieces match that filter yet.</p>}
@@ -339,7 +374,7 @@ function Browse({ initialCat, openProduct, brands }) {
   );
 }
 
-function ProductDetail({ productId, onBack, onAddToCart }) {
+function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWishlist }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -367,7 +402,12 @@ function ProductDetail({ productId, onBack, onAddToCart }) {
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 64px" }}>
-      <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}><ChevronLeft size={16} /> Back</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}><ChevronLeft size={16} /> Back</button>
+        <button onClick={() => onToggleWishlist(product.id)} aria-label="Toggle wishlist" style={{ background: "none", border: `1px solid ${C.line}`, borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+          <Heart size={16} color={C.ink} fill={wishlisted ? C.ink : "none"} />
+        </button>
+      </div>
       <div className="sadaar-product-layout" style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
         <div className="sadaar-product-image" style={{ flex: "1 1 380px" }}><Swatch product={product} height={460} /></div>
         <div style={{ flex: "1 1 320px" }}>
@@ -609,6 +649,45 @@ function Checkout({ items, setView, clearCart }) {
 
 const inputStyle = { border: `1px solid ${C.line}`, padding: "12px 14px", fontFamily: "Inter, sans-serif", fontSize: 14, background: C.warm, color: C.char };
 
+function Wishlist({ wishlistIds, onToggleWishlist, openProduct, setView }) {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (wishlistIds.length === 0) {
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    Promise.all(wishlistIds.map((id) => api(`/products/${id}`).catch(() => null)))
+      .then((results) => setProducts(results.filter(Boolean)))
+      .finally(() => setLoading(false));
+  }, [wishlistIds]);
+
+  return (
+    <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 64px" }}>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>Your wishlist</h1>
+      {loading && <Loading />}
+      {!loading && products.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px 24px" }}>
+          <Heart size={28} color={C.line} style={{ marginBottom: 14 }} />
+          <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>Nothing saved yet</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 6, marginBottom: 16 }}>Tap the heart on any piece to save it here for later.</p>
+          <button onClick={() => setView({ type: "browse" })} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Shop the edit</button>
+        </div>
+      )}
+      {!loading && products.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "28px 20px" }}>
+          {products.map((p) => (
+            <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={true} onToggleWishlist={onToggleWishlist} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TrackOrder() {
   const [orderId, setOrderId] = useState("");
   const [contact, setContact] = useState("");
@@ -681,6 +760,15 @@ function TrackOrder() {
 
 export default function SadaarMarketplace() {
   const [view, setView] = useState({ type: "home" });
+  const [wishlistIds, setWishlistIdsState] = useState(() => getWishlistIds());
+
+  const toggleWishlist = useCallback((productId) => {
+    setWishlistIdsState((prev) => {
+      const next = prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId];
+      setWishlistIds(next);
+      return next;
+    });
+  }, []);
   const [cart, setCart] = useState([]);
   const [brands, setBrands] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
@@ -740,6 +828,7 @@ export default function SadaarMarketplace() {
       cart: ["Your bag — SADAAR", null],
       checkout: ["Checkout — SADAAR", null],
       track: ["Track your order — SADAAR", "Check the status of your SADAAR order."],
+      wishlist: ["Your wishlist — SADAAR", null],
     };
     const entry = titles[view.type];
     if (entry) setPageMeta(...entry);
@@ -795,10 +884,10 @@ export default function SadaarMarketplace() {
 
       {!returningPayment && (
         <>
-          <Header setView={setView} cartCount={cartCount} onSearchClick={() => setView({ type: "browse" })} />
+          <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} />
 
-          {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} />}
-          {view.type === "browse" && <Browse initialCat={view.cat} openProduct={openProduct} brands={brands} />}
+          {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
+          {view.type === "browse" && <Browse initialCat={view.cat} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "brands" && (
             <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px 64px" }}>
               <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>All brands</h1>
@@ -813,10 +902,11 @@ export default function SadaarMarketplace() {
               </div>
             </div>
           )}
-          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} />}
+          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} wishlisted={wishlistIds.includes(view.id)} onToggleWishlist={toggleWishlist} />}
           {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
           {view.type === "track" && <TrackOrder />}
+          {view.type === "wishlist" && <Wishlist wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} openProduct={openProduct} setView={setView} />}
 
           <Footer setView={setView} />
         </>
