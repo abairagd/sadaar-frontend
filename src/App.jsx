@@ -327,6 +327,9 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   const [cat, setCat] = useState(initialCat || "all");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
+  const [search, setSearch] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -334,20 +337,41 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   useEffect(() => {
     setLoading(true);
     setError(null);
-    const params = new URLSearchParams();
-    if (cat !== "all") params.set("category", cat);
-    if (brand !== "all") params.set("brandId", brand);
-    if (sort !== "featured") params.set("sort", sort);
-    api(`/products?${params.toString()}`)
-      .then(setProducts)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [cat, brand, sort]);
+    const handle = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (cat !== "all") params.set("category", cat);
+      if (brand !== "all") params.set("brandId", brand);
+      if (sort !== "featured") params.set("sort", sort);
+      if (search.trim()) params.set("search", search.trim());
+      if (minPrice) params.set("minPrice", minPrice);
+      if (maxPrice) params.set("maxPrice", maxPrice);
+      api(`/products?${params.toString()}`)
+        .then(setProducts)
+        .catch((e) => setError(e.message))
+        .finally(() => setLoading(false));
+    }, 350); // debounce so typing in search/price doesn't fire a request per keystroke
+    return () => clearTimeout(handle);
+  }, [cat, brand, sort, search, minPrice, maxPrice]);
+
+  const activeFilterCount = [
+    cat !== "all", brand !== "all", search.trim(), minPrice, maxPrice,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setCat("all"); setBrand("all"); setSort("featured"); setSearch(""); setMinPrice(""); setMaxPrice("");
+  };
 
   return (
     <div className="sadaar-browse-layout" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 64px", display: "flex", gap: 32 }}>
       <aside className="sadaar-browse-sidebar" style={{ width: 200, flexShrink: 0 }}>
         <div className="sadaar-browse-filters">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search pieces..."
+          style={{ width: "100%", border: `1px solid ${C.line}`, padding: "8px 10px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, marginBottom: 20, boxSizing: "border-box" }}
+        />
+
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Category</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
           {["all", ...CATEGORIES].map((c) => (
@@ -355,11 +379,23 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
           ))}
         </div>
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Brand</p>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
           {[{ id: "all", name: "All" }, ...brands].map((b) => (
             <button key={b.id} onClick={() => setBrand(String(b.id))} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: brand === String(b.id) ? C.ink : C.muted, fontWeight: brand === String(b.id) ? 600 : 400 }}>{b.name}</button>
           ))}
         </div>
+
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Price (SAR)</p>
+        <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+          <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} type="number" placeholder="Min" style={{ width: "50%", border: `1px solid ${C.line}`, padding: "7px 8px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, boxSizing: "border-box" }} />
+          <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} type="number" placeholder="Max" style={{ width: "50%", border: `1px solid ${C.line}`, padding: "7px 8px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, boxSizing: "border-box" }} />
+        </div>
+
+        {activeFilterCount > 0 && (
+          <button onClick={clearFilters} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.bronze, textDecoration: "underline" }}>
+            Clear filters ({activeFilterCount})
+          </button>
+        )}
         </div>
       </aside>
 
@@ -367,9 +403,10 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{loading ? "..." : `${products.length} pieces`}</p>
           <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ fontFamily: "Inter, sans-serif", fontSize: 13, border: `1px solid ${C.line}`, padding: "6px 10px", background: C.warm, color: C.char }}>
-            <option value="featured">Featured</option>
+            <option value="featured">Newest</option>
             <option value="price-asc">Price: low to high</option>
             <option value="price-desc">Price: high to low</option>
+            <option value="name-asc">Name: A to Z</option>
           </select>
         </div>
         {loading && <Loading />}
@@ -379,7 +416,14 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
             {products.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} />)}
           </div>
         )}
-        {!loading && !error && products.length === 0 && <p style={{ fontFamily: "Inter, sans-serif", color: C.muted }}>No pieces match that filter yet.</p>}
+        {!loading && !error && products.length === 0 && (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <p style={{ fontFamily: "Inter, sans-serif", color: C.muted, marginBottom: 12 }}>No pieces match those filters.</p>
+            {activeFilterCount > 0 && (
+              <button onClick={clearFilters} style={{ background: "none", border: `1px solid ${C.line}`, padding: "8px 16px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer", color: C.char }}>Clear filters</button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
