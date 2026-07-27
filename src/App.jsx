@@ -42,22 +42,21 @@ a:hover { opacity: 0.85; }
 }
 `;
 
-const CATEGORIES = ["Men", "Women", "Accessories", "Shoes"];
+const CATEGORIES = ["Men", "Women"];
 
 // Subcategories are intentionally just a plain object here (not stored/enforced
 // on the backend) — adding a new one later is just adding a string to this list.
+// Shoes and Accessories are reused as subcategory names under both Men and
+// Women — the (category, subcategory) pair together disambiguates them, so
+// "Women > Shoes" and "Men > Shoes" filter correctly as separate groups.
 const SUBCATEGORIES_BY_CATEGORY = {
-  Men: ["Streetwear", "Shirts", "Pants", "Swimwear", "Thobes"],
-  Women: ["Abayas", "Streetwear", "Shirts", "Pants", "Swimwear", "Dresses"],
-  Accessories: ["Jewelry", "Bags", "Belts", "Watches"],
-  Shoes: ["Sneakers", "Sandals", "Boots", "Heels"],
+  Men: ["Shoes", "Accessories", "Streetwear", "Shirts", "Pants", "Swimwear", "Thobes"],
+  Women: ["Shoes", "Accessories", "Abayas", "Streetwear", "Shirts", "Pants", "Swimwear", "Dresses"],
 };
 
 const catTone = {
   Men: { bg: C.sand, fg: C.ink },
   Women: { bg: "#EDE3D0", fg: C.deep },
-  Accessories: { bg: "#EFE7D6", fg: C.bronze },
-  Shoes: { bg: "#E4E6DD", fg: C.ink },
 };
 
 function money(n) {
@@ -122,13 +121,13 @@ function setWishlistIds(ids) {
 const LANG_KEY = "sadaar_lang";
 
 const CATEGORY_LABELS = {
-  en: { Men: "Men", Women: "Women", Accessories: "Accessories", Shoes: "Shoes" },
-  ar: { Men: "رجال", Women: "نساء", Accessories: "إكسسوارات", Shoes: "أحذية" },
+  en: { Men: "Men", Women: "Women" },
+  ar: { Men: "رجال", Women: "نساء" },
 };
 
 const SUBCATEGORY_LABELS = {
-  en: { Streetwear: "Streetwear", Shirts: "Shirts", Pants: "Pants", Swimwear: "Swimwear", Thobes: "Thobes", Abayas: "Abayas", Dresses: "Dresses", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels" },
-  ar: { Streetwear: "ستريت وير", Shirts: "قمصان", Pants: "بناطيل", Swimwear: "ملابس سباحة", Thobes: "أثواب", Abayas: "عبايات", Dresses: "فساتين", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي" },
+  en: { Shoes: "Shoes", Accessories: "Accessories", Streetwear: "Streetwear", Shirts: "Shirts", Pants: "Pants", Swimwear: "Swimwear", Thobes: "Thobes", Abayas: "Abayas", Dresses: "Dresses", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels" },
+  ar: { Shoes: "أحذية", Accessories: "إكسسوارات", Streetwear: "ستريت وير", Shirts: "قمصان", Pants: "بناطيل", Swimwear: "ملابس سباحة", Thobes: "أثواب", Abayas: "عبايات", Dresses: "فساتين", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي" },
 };
 
 const T = {
