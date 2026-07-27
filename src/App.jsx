@@ -360,15 +360,10 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
       {menuOpen && (
         <div style={{ borderTop: `1px solid ${C.line}`, padding: "14px 24px 18px", display: "flex", flexWrap: "wrap", gap: "10px 22px", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
           <button onClick={() => { setView({ type: "home" }); setMenuOpen(false); }} style={navBtn}>{t.home}</button>
-          <button onClick={() => { setView({ type: "browse" }); setMenuOpen(false); }} style={navBtn}>{t.shopAll}</button>
           {CATEGORIES.map((c) => (
             <button key={c} onClick={() => { setView({ type: "browse", cat: c }); setMenuOpen(false); }} style={navBtn}>{categoryLabel(c)}</button>
           ))}
           <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>{t.brandsNav}</button>
-          <button onClick={() => { setView({ type: "wishlist" }); setMenuOpen(false); }} style={navBtn}>{t.wishlistNav}</button>
-          <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>{t.trackOrderNav}</button>
-          <button onClick={() => { setView({ type: "contact" }); setMenuOpen(false); }} style={navBtn}>{t.contactNav}</button>
-          <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ ...navBtn, textDecoration: "none" }}>{t.brandSignIn}</a>
         </div>
       )}
     </header>
@@ -394,6 +389,8 @@ function Footer({ setView }) {
         </div>
         <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerSadaar}</div>
+          <button onClick={() => setView({ type: "browse" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.shopAll}</button>
+          <button onClick={() => setView({ type: "wishlist" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.wishlistNav}</button>
           <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
           <button onClick={() => setView({ type: "contact" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.contactNav}</button>
           <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.brandSignIn}</a>
