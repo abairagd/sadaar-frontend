@@ -42,14 +42,22 @@ a:hover { opacity: 0.85; }
 }
 `;
 
-const CATEGORIES = ["Contemporary", "Abayas", "Streetwear", "Accessories", "Footwear"];
+const CATEGORIES = ["Men", "Women", "Accessories", "Shoes"];
+
+// Subcategories are intentionally just a plain object here (not stored/enforced
+// on the backend) — adding a new one later is just adding a string to this list.
+const SUBCATEGORIES_BY_CATEGORY = {
+  Men: ["Streetwear", "Shirts", "Pants", "Swimwear", "Thobes"],
+  Women: ["Abayas", "Streetwear", "Shirts", "Pants", "Swimwear", "Dresses"],
+  Accessories: ["Jewelry", "Bags", "Belts", "Watches"],
+  Shoes: ["Sneakers", "Sandals", "Boots", "Heels"],
+};
 
 const catTone = {
-  Contemporary: { bg: C.sand, fg: C.ink },
-  Abayas: { bg: "#EDE3D0", fg: C.deep },
-  Streetwear: { bg: "#E7E1D2", fg: C.char },
+  Men: { bg: C.sand, fg: C.ink },
+  Women: { bg: "#EDE3D0", fg: C.deep },
   Accessories: { bg: "#EFE7D6", fg: C.bronze },
-  Footwear: { bg: "#E4E6DD", fg: C.ink },
+  Shoes: { bg: "#E4E6DD", fg: C.ink },
 };
 
 function money(n) {
@@ -114,8 +122,13 @@ function setWishlistIds(ids) {
 const LANG_KEY = "sadaar_lang";
 
 const CATEGORY_LABELS = {
-  en: { Contemporary: "Contemporary", Abayas: "Abayas", Streetwear: "Streetwear", Accessories: "Accessories", Footwear: "Footwear" },
-  ar: { Contemporary: "عصري", Abayas: "عبايات", Streetwear: "ستريت وير", Accessories: "إكسسوارات", Footwear: "أحذية" },
+  en: { Men: "Men", Women: "Women", Accessories: "Accessories", Shoes: "Shoes" },
+  ar: { Men: "رجال", Women: "نساء", Accessories: "إكسسوارات", Shoes: "أحذية" },
+};
+
+const SUBCATEGORY_LABELS = {
+  en: { Streetwear: "Streetwear", Shirts: "Shirts", Pants: "Pants", Swimwear: "Swimwear", Thobes: "Thobes", Abayas: "Abayas", Dresses: "Dresses", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels" },
+  ar: { Streetwear: "ستريت وير", Shirts: "قمصان", Pants: "بناطيل", Swimwear: "ملابس سباحة", Thobes: "أثواب", Abayas: "عبايات", Dresses: "فساتين", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي" },
 };
 
 const T = {
@@ -221,7 +234,7 @@ function getLang() {
   }
 }
 
-const LangContext = createContext({ lang: "en", t: T.en, dir: "ltr", categoryLabel: (c) => c, toggleLang: () => {} });
+const LangContext = createContext({ lang: "en", t: T.en, dir: "ltr", categoryLabel: (c) => c, subcategoryLabel: (c) => c, toggleLang: () => {} });
 function useLang() {
   return useContext(LangContext);
 }
@@ -246,7 +259,7 @@ function Tag({ text }) {
 }
 
 function Swatch({ product, height = 260, imageUrl }) {
-  const tone = catTone[product.category] || catTone.Contemporary;
+  const tone = catTone[product.category] || catTone.Men;
   const brandName = product.brand_name || product.brandName || "SADAAR";
   const src = imageUrl || product.image_url || product.images?.[0]?.url;
 
@@ -471,6 +484,7 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
 
 function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist }) {
   const [cat, setCat] = useState(initialCat || "all");
+  const [subcat, setSubcat] = useState("all");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
   const [search, setSearch] = useState("");
@@ -479,7 +493,11 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { t, categoryLabel } = useLang();
+  const { t, categoryLabel, subcategoryLabel } = useLang();
+
+  // Reset subcategory whenever the top-level category changes, since the
+  // available subcategory list depends on which category is selected.
+  useEffect(() => { setSubcat("all"); }, [cat]);
 
   useEffect(() => {
     setLoading(true);
@@ -487,6 +505,7 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
     const handle = setTimeout(() => {
       const params = new URLSearchParams();
       if (cat !== "all") params.set("category", cat);
+      if (subcat !== "all") params.set("subcategory", subcat);
       if (brand !== "all") params.set("brandId", brand);
       if (sort !== "featured") params.set("sort", sort);
       if (search.trim()) params.set("search", search.trim());
@@ -498,14 +517,14 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
         .finally(() => setLoading(false));
     }, 350); // debounce so typing in search/price doesn't fire a request per keystroke
     return () => clearTimeout(handle);
-  }, [cat, brand, sort, search, minPrice, maxPrice]);
+  }, [cat, subcat, brand, sort, search, minPrice, maxPrice]);
 
   const activeFilterCount = [
-    cat !== "all", brand !== "all", search.trim(), minPrice, maxPrice,
+    cat !== "all", subcat !== "all", brand !== "all", search.trim(), minPrice, maxPrice,
   ].filter(Boolean).length;
 
   const clearFilters = () => {
-    setCat("all"); setBrand("all"); setSort("featured"); setSearch(""); setMinPrice(""); setMaxPrice("");
+    setCat("all"); setSubcat("all"); setBrand("all"); setSort("featured"); setSearch(""); setMinPrice(""); setMaxPrice("");
   };
 
   return (
@@ -525,6 +544,16 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
             <button key={c} onClick={() => setCat(c)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: cat === c ? C.ink : C.muted, fontWeight: cat === c ? 600 : 400 }}>{c === "all" ? t.all : categoryLabel(c)}</button>
           ))}
         </div>
+        {cat !== "all" && (SUBCATEGORIES_BY_CATEGORY[cat] || []).length > 0 && (
+          <>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{categoryLabel(cat)}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+              {["all", ...SUBCATEGORIES_BY_CATEGORY[cat]].map((s) => (
+                <button key={s} onClick={() => setSubcat(s)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: subcat === s ? C.ink : C.muted, fontWeight: subcat === s ? 600 : 400 }}>{s === "all" ? t.all : subcategoryLabel(s)}</button>
+              ))}
+            </div>
+          </>
+        )}
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{t.brand}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
           {[{ id: "all", name: t.all }, ...brands].map((b) => (
@@ -612,7 +641,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [related, setRelated] = useState([]);
-  const { t } = useLang();
+  const { t, categoryLabel, subcategoryLabel } = useLang();
 
   useEffect(() => {
     setLoading(true);
@@ -649,6 +678,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
         <div style={{ flex: "1 1 320px" }}>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze }}>{product.brand_name}</p>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: 30, color: C.ink, margin: "6px 0" }}>{product.name}</h1>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginBottom: 12 }}>{categoryLabel(product.category)}{product.subcategory ? ` · ${subcategoryLabel(product.subcategory)}` : ""}</p>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 18, color: C.char, marginBottom: 20 }}>{money(product.price)}</p>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, lineHeight: 1.6, marginBottom: 24 }}>{product.description}</p>
 
@@ -1165,6 +1195,7 @@ export default function SadaarMarketplace() {
     t: T[lang],
     dir: lang === "ar" ? "rtl" : "ltr",
     categoryLabel: (c) => CATEGORY_LABELS[lang][c] || c,
+    subcategoryLabel: (s) => SUBCATEGORY_LABELS[lang][s] || s,
     toggleLang,
   }), [lang, toggleLang]);
 
