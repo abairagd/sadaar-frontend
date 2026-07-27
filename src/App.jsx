@@ -54,6 +54,24 @@ function money(n) {
   return `SAR ${Number(n).toLocaleString()}`;
 }
 
+// Mirrors the backend's per-brand shipping calculation (src/controllers/ordersController.js)
+// so the customer sees an accurate estimate before checkout. The backend always
+// recomputes this authoritatively at order time — this is display-only.
+const SHIPPING_FEE_PER_BRAND = 25;
+const FREE_SHIPPING_THRESHOLD = 300;
+
+function estimateShipping(items) {
+  const brandSubtotals = {};
+  for (const item of items) {
+    const brandId = item.product.brand_id;
+    brandSubtotals[brandId] = (brandSubtotals[brandId] || 0) + item.product.price * item.qty;
+  }
+  return Object.values(brandSubtotals).reduce(
+    (s, brandSubtotal) => s + (brandSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE_PER_BRAND),
+    0
+  );
+}
+
 // Updates the browser tab title and meta description as the user navigates.
 // Note: since this is a client-rendered app, search engine crawlers that don't
 // execute JavaScript won't see these per-page values — this mainly helps
@@ -550,6 +568,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
 
 function Cart({ items, updateQty, removeItem, setView }) {
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
+  const shipping = estimateShipping(items);
   if (items.length === 0) {
     return (
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
@@ -581,9 +600,20 @@ function Cart({ items, updateQty, removeItem, setView }) {
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.ink, fontWeight: 500 }}>{money(item.product.price * item.qty)}</p>
         </div>
       ))}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 0", fontFamily: "Inter, sans-serif" }}>
-        <p style={{ fontSize: 15, color: C.char }}>Subtotal</p>
-        <p style={{ fontSize: 15, color: C.ink, fontWeight: 600 }}>{money(subtotal)}</p>
+      <div style={{ padding: "20px 0", fontFamily: "Inter, sans-serif" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+          <p style={{ fontSize: 15, color: C.char, margin: 0 }}>Subtotal</p>
+          <p style={{ fontSize: 15, color: C.ink, margin: 0 }}>{money(subtotal)}</p>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+          <p style={{ fontSize: 15, color: C.char, margin: 0 }}>Shipping</p>
+          <p style={{ fontSize: 15, color: shipping === 0 ? "#2F5B3C" : C.ink, margin: 0 }}>{shipping === 0 ? "Free" : money(shipping)}</p>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: `1px solid ${C.line}` }}>
+          <p style={{ fontSize: 15, color: C.char, fontWeight: 600, margin: 0 }}>Estimated total</p>
+          <p style={{ fontSize: 15, color: C.ink, fontWeight: 600, margin: 0 }}>{money(subtotal + shipping)}</p>
+        </div>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 10 }}>Shipping is calculated per brand (SAR {SHIPPING_FEE_PER_BRAND}, free over {money(FREE_SHIPPING_THRESHOLD)} per brand) since each brand ships separately. Estimated delivery: 3–5 business days.</p>
       </div>
       <button onClick={() => setView({ type: "checkout" })} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Checkout</button>
     </div>
@@ -592,6 +622,7 @@ function Cart({ items, updateQty, removeItem, setView }) {
 
 function Checkout({ items, setView, clearCart }) {
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
+  const shipping = estimateShipping(items);
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", city: "", address: "" });
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState(null);
@@ -735,11 +766,21 @@ function Checkout({ items, setView, clearCart }) {
         <input placeholder="Address" value={form.address} onChange={set("address")} style={inputStyle} />
       </div>
       {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 12 }}>{error}</p>}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "14px 0", borderTop: `1px solid ${C.line}`, fontFamily: "Inter, sans-serif" }}>
-        <p style={{ fontSize: 15 }}>Total due</p>
-        <p style={{ fontSize: 15, fontWeight: 600 }}>{money(subtotal)}</p>
+      <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 14, fontFamily: "Inter, sans-serif" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+          <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Subtotal</p>
+          <p style={{ fontSize: 14, color: C.char, margin: 0 }}>{money(subtotal)}</p>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+          <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Shipping</p>
+          <p style={{ fontSize: 14, color: shipping === 0 ? "#2F5B3C" : C.char, margin: 0 }}>{shipping === 0 ? "Free" : money(shipping)}</p>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <p style={{ fontSize: 15 }}>Total due</p>
+          <p style={{ fontSize: 15, fontWeight: 600 }}>{money(subtotal + shipping)}</p>
+        </div>
       </div>
-      <button onClick={placeOrder} disabled={placing} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: placing ? "default" : "pointer", opacity: placing ? 0.7 : 1 }}>
+      <button onClick={placeOrder} disabled={placing} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: placing ? "default" : "pointer", opacity: placing ? 0.7 : 1, marginTop: 16 }}>
         {placing ? "Placing order..." : "Continue to payment"}
       </button>
     </div>
@@ -847,9 +888,19 @@ function TrackOrder() {
               }}>{i.fulfillment_status}</span>
             </div>
           ))}
-          <div style={{ display: "flex", justifyContent: "space-between", padding: "16px 0 0", fontFamily: "Inter, sans-serif" }}>
-            <p style={{ fontSize: 14, color: C.char }}>Total</p>
-            <p style={{ fontSize: 14, color: C.ink, fontWeight: 600 }}>{money(order.total)}</p>
+          <div style={{ paddingTop: 16, fontFamily: "Inter, sans-serif" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>Subtotal</p>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{money(order.subtotal)}</p>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>Shipping</p>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{Number(order.shipping_fee) === 0 ? "Free" : money(order.shipping_fee)}</p>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <p style={{ fontSize: 14, color: C.char, margin: 0 }}>Total</p>
+              <p style={{ fontSize: 14, color: C.ink, fontWeight: 600, margin: 0 }}>{money(order.total)}</p>
+            </div>
           </div>
         </div>
       )}
