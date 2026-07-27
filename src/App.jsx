@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
 import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Menu, Check, Loader2, Heart } from "lucide-react";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
@@ -15,10 +15,12 @@ const C = {
 };
 
 const FONTS = `
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Tajawal:wght@400;500;700&display=swap');
 
 * { box-sizing: border-box; }
 body { overflow-x: hidden; }
+
+.sadaar-rtl, .sadaar-rtl * { font-family: 'Tajawal', sans-serif !important; }
 
 button { transition: opacity 0.15s ease, transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease; }
 button:hover:not(:disabled) { opacity: 0.85; }
@@ -104,6 +106,114 @@ function getWishlistIds() {
 
 function setWishlistIds(ids) {
   localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+}
+
+// --- Language / translations ---
+// Product and brand content (names, descriptions) stays exactly as entered by
+// brands — this only translates SADAAR's own UI chrome. Persisted per device.
+const LANG_KEY = "sadaar_lang";
+
+const CATEGORY_LABELS = {
+  en: { Contemporary: "Contemporary", Abayas: "Abayas", Streetwear: "Streetwear", Accessories: "Accessories", Footwear: "Footwear" },
+  ar: { Contemporary: "عصري", Abayas: "عبايات", Streetwear: "ستريت وير", Accessories: "إكسسوارات", Footwear: "أحذية" },
+};
+
+const T = {
+  en: {
+    home: "Home", shopAll: "Shop all", brandsNav: "Brands", wishlistNav: "Wishlist", trackOrderNav: "Track order",
+    tagline: "Home of Saudi Fashion", eyebrow: "Curated · Direct from the brand",
+    heroTitle1: "The home of", heroTitle2: "Saudi fashion.",
+    heroSubtitle: "Independent Saudi labels, one checkout. Every piece is shipped and stood behind by the brand that made it.",
+    shopTheEdit: "Shop the edit",
+    curatedBrands: "Curated brands", viewAll: "View all →",
+    shopByCategory: "Shop by category", thisWeeksEdit: "This week's edit",
+    ourStory: "Our story",
+    ourStoryText: "Saudi fashion has never lacked talent — it's lacked a single front door. SADAAR brings independent Saudi labels together under one roof, without asking any of them to change what makes them theirs.",
+    joinQuestion: "Are you a Saudi fashion brand?", joinSubtext: "Join SADAAR and reach shoppers looking for exactly what you make.", applyToSell: "Apply to sell",
+    searchPlaceholder: "Search pieces...", category: "Category", all: "All", brand: "Brand", price: "Price (SAR)", min: "Min", max: "Max",
+    clearFilters: "Clear filters", pieces: "pieces",
+    sortNewest: "Newest", sortPriceAsc: "Price: low to high", sortPriceDesc: "Price: high to low", sortNameAsc: "Name: A to Z",
+    noMatches: "No pieces match those filters.",
+    allBrands: "All brands", shopBrand: (name) => `Shop ${name}`,
+    back: "Back", size: "Size", qty: "Qty", addToCart: "Add to cart", soldOut: "Sold out", addedToCart: "Added to cart",
+    shippedBy: (brand) => `Shipped directly by ${brand}, curated and guaranteed by SADAAR.`,
+    youMightAlsoLike: "You might also like",
+    yourBag: "Your bag", bagEmpty: "Your bag is empty", remove: "Remove",
+    subtotal: "Subtotal", shipping: "Shipping", free: "Free", estimatedTotal: "Estimated total",
+    shippingNote: (fee, threshold) => `Shipping is calculated per brand (SAR ${fee}, free over SAR ${threshold} per brand) since each brand ships separately. Estimated delivery: 3–5 business days.`,
+    checkout: "Checkout", checkoutSubtitle: "Enter your shipping details, then you'll pay by card on the next step.",
+    fullName: "Full name", emailOptional: "Email (optional)", phoneNumber: "Phone number", city: "City", address: "Address",
+    promoCode: "Promo code", apply: "Apply", checking: "Checking...", codeApplied: (code) => `Code "${code}" applied`,
+    discount: "Discount", totalDue: "Total due", continueToPayment: "Continue to payment", placingOrder: "Placing order...",
+    payment: "Payment", paymentGatewayMissing: "payment gateway isn't configured yet on the backend (MOYASAR_PUBLISHABLE_KEY missing)",
+    paymentReceived: "Payment received", paymentReceivedNote: "Each brand in your bag has been notified to fulfill their item.",
+    backToSadaar: "Back to SADAAR",
+    confirmingPayment: "Confirming your payment...",
+    confirmationEmailNote: (orderId, total) => `Order #${orderId} — ${total}. A confirmation email is on its way.`,
+    couldNotConfirmPayment: "We couldn't confirm that payment",
+    trackYourOrder: "Track your order", trackSubtitle: "Enter your order number and the email or phone you used at checkout.",
+    orderNumberPlaceholder: "Order number (e.g. 17)", contactPlaceholder: "Email or phone used at checkout", trackOrderBtn: "Track order", lookingUp: "Looking up...",
+    tracking: "Tracking", total: "Total",
+    yourWishlist: "Your wishlist", nothingSaved: "Nothing saved yet", nothingSavedSubtext: "Tap the heart on any piece to save it here for later.",
+    footerTagline: "One marketplace for Saudi fashion — every brand kept true to its own hand, delivered through one trusted checkout.",
+    footerShop: "Shop", footerSadaar: "SADAAR", footerJoin: "Join as a brand", footerCopyright: "© 2026 SADAAR. Every product ships direct from its brand.",
+    fillAllFields: "Please fill in all fields.",
+    enterOrderAndContact: "Enter both your order number and the email or phone you used.",
+  },
+  ar: {
+    home: "الرئيسية", shopAll: "تسوقي الكل", brandsNav: "الماركات", wishlistNav: "المفضلة", trackOrderNav: "تتبع الطلب",
+    tagline: "بيت الأزياء السعودية", eyebrow: "منتقاة · مباشرة من الماركة",
+    heroTitle1: "بيت", heroTitle2: "الأزياء السعودية.",
+    heroSubtitle: "ماركات سعودية مستقلة، سلة شراء واحدة. كل قطعة تُشحن ويقف خلفها صانعها.",
+    shopTheEdit: "تسوقي التشكيلة",
+    curatedBrands: "ماركات منتقاة", viewAll: "عرض الكل ←",
+    shopByCategory: "تسوقي حسب الفئة", thisWeeksEdit: "تشكيلة هذا الأسبوع",
+    ourStory: "قصتنا",
+    ourStoryText: "الأزياء السعودية لم تفتقر يومًا للموهبة، بل افتقرت لباب واحد يجمعها. سدّار يجمع الماركات السعودية المستقلة تحت سقف واحد، دون أن يطلب من أي منها أن تتغير عمّا يميزها.",
+    joinQuestion: "هل أنتِ صاحبة ماركة أزياء سعودية؟", joinSubtext: "انضمي إلى سدّار وصلي إلى المتسوقين الباحثين عمّا تصنعينه بالضبط.", applyToSell: "قدّمي طلب الانضمام",
+    searchPlaceholder: "ابحثي عن قطعة...", category: "الفئة", all: "الكل", brand: "الماركة", price: "السعر (ر.س)", min: "الأدنى", max: "الأعلى",
+    clearFilters: "مسح الفلاتر", pieces: "قطعة",
+    sortNewest: "الأحدث", sortPriceAsc: "السعر: من الأقل للأعلى", sortPriceDesc: "السعر: من الأعلى للأقل", sortNameAsc: "الاسم: أ-ي",
+    noMatches: "لا توجد قطع مطابقة لهذه الفلاتر.",
+    allBrands: "جميع الماركات", shopBrand: (name) => `تسوقي ${name}`,
+    back: "رجوع", size: "المقاس", qty: "الكمية", addToCart: "أضيفي إلى السلة", soldOut: "نفدت الكمية", addedToCart: "تمت الإضافة",
+    shippedBy: (brand) => `تُشحن مباشرة من ${brand}، منتقاة ومضمونة من سدّار.`,
+    youMightAlsoLike: "قد يعجبك أيضًا",
+    yourBag: "سلتك", bagEmpty: "سلتك فارغة", remove: "إزالة",
+    subtotal: "المجموع الفرعي", shipping: "الشحن", free: "مجاني", estimatedTotal: "الإجمالي التقديري",
+    shippingNote: (fee, threshold) => `يُحتسب الشحن لكل ماركة (${fee} ر.س، مجاني فوق ${threshold} ر.س لكل ماركة) لأن كل ماركة تشحن بشكل منفصل. التوصيل المتوقع: 3–5 أيام عمل.`,
+    checkout: "إتمام الشراء", checkoutSubtitle: "أدخلي بيانات الشحن، ثم ادفعي بالبطاقة في الخطوة التالية.",
+    fullName: "الاسم الكامل", emailOptional: "البريد الإلكتروني (اختياري)", phoneNumber: "رقم الجوال", city: "المدينة", address: "العنوان",
+    promoCode: "كود الخصم", apply: "تطبيق", checking: "جارٍ التحقق...", codeApplied: (code) => `تم تطبيق الكود "${code}"`,
+    discount: "الخصم", totalDue: "المبلغ المستحق", continueToPayment: "متابعة الدفع", placingOrder: "جارٍ تنفيذ الطلب...",
+    payment: "الدفع", paymentGatewayMissing: "بوابة الدفع غير مُهيأة بعد",
+    paymentReceived: "تم استلام الدفع", paymentReceivedNote: "تم إشعار كل ماركة في سلتك لتجهيز طلبها.",
+    backToSadaar: "العودة إلى سدّار",
+    confirmingPayment: "جارٍ تأكيد الدفع...",
+    confirmationEmailNote: (orderId, total) => `الطلب رقم ${orderId} — ${total}. بريد التأكيد في طريقه إليك.`,
+    couldNotConfirmPayment: "تعذّر تأكيد هذا الدفع",
+    trackYourOrder: "تتبعي طلبك", trackSubtitle: "أدخلي رقم الطلب والبريد الإلكتروني أو رقم الجوال المستخدم عند الدفع.",
+    orderNumberPlaceholder: "رقم الطلب (مثال: 17)", contactPlaceholder: "البريد الإلكتروني أو الجوال المستخدم عند الدفع", trackOrderBtn: "تتبع الطلب", lookingUp: "جارٍ البحث...",
+    tracking: "رقم التتبع", total: "الإجمالي",
+    yourWishlist: "قائمة المفضلة", nothingSaved: "لا يوجد شيء محفوظ بعد", nothingSavedSubtext: "اضغطي على القلب في أي قطعة لحفظها هنا لاحقًا.",
+    footerTagline: "سوق واحد للأزياء السعودية — كل ماركة تحافظ على هويتها، ويصلك عبر عملية شراء واحدة موثوقة.",
+    footerShop: "تسوقي", footerSadaar: "سدّار", footerJoin: "انضمي كماركة", footerCopyright: "© 2026 سدّار. كل منتج يُشحن مباشرة من ماركته.",
+    fillAllFields: "الرجاء تعبئة جميع الحقول.",
+    enterOrderAndContact: "أدخلي رقم الطلب والبريد الإلكتروني أو الجوال المستخدم.",
+  },
+};
+
+function getLang() {
+  try {
+    return localStorage.getItem(LANG_KEY) === "ar" ? "ar" : "en";
+  } catch {
+    return "en";
+  }
+}
+
+const LangContext = createContext({ lang: "en", t: T.en, dir: "ltr", categoryLabel: (c) => c, toggleLang: () => {} });
+function useLang() {
+  return useContext(LangContext);
 }
 
 async function api(path, options = {}) {
@@ -193,6 +303,7 @@ function ErrorBox({ message }) {
 
 function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t, lang, toggleLang, categoryLabel } = useLang();
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 20, background: C.warm, borderBottom: `1px solid ${C.line}` }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -201,34 +312,37 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
         </button>
         <button onClick={() => setView({ type: "home" })} style={{ background: "none", border: "none", cursor: "pointer", textAlign: "center" }}>
           <div style={{ fontFamily: "Fraunces, serif", fontWeight: 600, fontSize: 26, letterSpacing: "0.04em", color: C.ink }}>SADAAR</div>
-          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.bronze, marginTop: -2 }}>Home of Saudi Fashion</div>
+          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.bronze, marginTop: -2 }}>{t.tagline}</div>
         </button>
-        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <button onClick={toggleLang} style={{ background: "none", border: `1px solid ${C.line}`, borderRadius: 3, padding: "4px 9px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.char }}>
+            {lang === "en" ? "ع" : "EN"}
+          </button>
           <button onClick={onSearchClick} style={{ background: "none", border: "none", cursor: "pointer" }} aria-label="Search"><Search size={19} color={C.ink} /></button>
           <button onClick={() => setView({ type: "wishlist" })} style={{ background: "none", border: "none", cursor: "pointer", position: "relative" }} aria-label="Wishlist">
             <Heart size={19} color={C.ink} />
             {wishlistCount > 0 && (
-              <span style={{ position: "absolute", top: -6, right: -8, background: C.ink, color: C.warm, fontSize: 10, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{wishlistCount}</span>
+              <span style={{ position: "absolute", top: -6, insetInlineEnd: -8, background: C.ink, color: C.warm, fontSize: 10, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{wishlistCount}</span>
             )}
           </button>
           <button onClick={() => setView({ type: "cart" })} style={{ background: "none", border: "none", cursor: "pointer", position: "relative" }} aria-label="Cart">
             <ShoppingBag size={19} color={C.ink} />
             {cartCount > 0 && (
-              <span style={{ position: "absolute", top: -6, right: -8, background: C.ink, color: C.warm, fontSize: 10, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{cartCount}</span>
+              <span style={{ position: "absolute", top: -6, insetInlineEnd: -8, background: C.ink, color: C.warm, fontSize: 10, width: 16, height: 16, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>{cartCount}</span>
             )}
           </button>
         </div>
       </div>
       {menuOpen && (
         <div style={{ borderTop: `1px solid ${C.line}`, padding: "14px 24px 18px", display: "flex", flexWrap: "wrap", gap: "10px 22px", fontFamily: "Inter, sans-serif", fontSize: 14 }}>
-          <button onClick={() => { setView({ type: "home" }); setMenuOpen(false); }} style={navBtn}>Home</button>
-          <button onClick={() => { setView({ type: "browse" }); setMenuOpen(false); }} style={navBtn}>Shop all</button>
+          <button onClick={() => { setView({ type: "home" }); setMenuOpen(false); }} style={navBtn}>{t.home}</button>
+          <button onClick={() => { setView({ type: "browse" }); setMenuOpen(false); }} style={navBtn}>{t.shopAll}</button>
           {CATEGORIES.map((c) => (
-            <button key={c} onClick={() => { setView({ type: "browse", cat: c }); setMenuOpen(false); }} style={navBtn}>{c}</button>
+            <button key={c} onClick={() => { setView({ type: "browse", cat: c }); setMenuOpen(false); }} style={navBtn}>{categoryLabel(c)}</button>
           ))}
-          <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>Brands</button>
-          <button onClick={() => { setView({ type: "wishlist" }); setMenuOpen(false); }} style={navBtn}>Wishlist</button>
-          <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>Track order</button>
+          <button onClick={() => { setView({ type: "brands" }); setMenuOpen(false); }} style={navBtn}>{t.brandsNav}</button>
+          <button onClick={() => { setView({ type: "wishlist" }); setMenuOpen(false); }} style={navBtn}>{t.wishlistNav}</button>
+          <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>{t.trackOrderNav}</button>
         </div>
       )}
     </header>
@@ -238,40 +352,42 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
 const navBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0" };
 
 function Footer({ setView }) {
+  const { t, categoryLabel } = useLang();
   return (
     <footer style={{ background: C.ink, color: C.sand, marginTop: 64 }}>
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px", display: "flex", flexWrap: "wrap", gap: 40, justifyContent: "space-between" }}>
         <div style={{ maxWidth: 320 }}>
           <div style={{ fontFamily: "Fraunces, serif", fontSize: 22, marginBottom: 8 }}>SADAAR</div>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.6, color: "#C9CDBF" }}>One marketplace for Saudi fashion — every brand kept true to its own hand, delivered through one trusted checkout.</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.6, color: "#C9CDBF" }}>{t.footerTagline}</p>
         </div>
         <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
-          <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>Shop</div>
+          <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerShop}</div>
           {CATEGORIES.map((c) => (
-            <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{c}</button>
+            <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{categoryLabel(c)}</button>
           ))}
         </div>
         <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C9CDBF" }}>
-          <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>SADAAR</div>
-          <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>Track your order</button>
-          <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>Join as a brand</a>
+          <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerSadaar}</div>
+          <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
+          <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
         </div>
       </div>
-      <div style={{ borderTop: "1px solid #2C3D30", padding: "16px 24px", fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8C9186", textAlign: "center" }}>© 2026 SADAAR. Every product ships direct from its brand.</div>
+      <div style={{ borderTop: "1px solid #2C3D30", padding: "16px 24px", fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8C9186", textAlign: "center" }}>{t.footerCopyright}</div>
     </footer>
   );
 }
 
 function Home({ setView, openProduct, products, brands, loading, error, wishlistIds, onToggleWishlist }) {
   const featured = products.slice(0, 8);
+  const { t, categoryLabel } = useLang();
   return (
     <div>
       <section className="sadaar-hero" style={{ maxWidth: 1180, margin: "0 auto", padding: "56px 24px 40px", display: "flex", flexWrap: "wrap", gap: 40, alignItems: "center" }}>
         <div style={{ flex: "1 1 380px" }}>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>Curated · Direct from the brand</p>
-          <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(34px, 5vw, 56px)", lineHeight: 1.05, color: C.ink, margin: 0 }}>The home of<br />Saudi fashion.</h1>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: C.muted, marginTop: 20, maxWidth: 420, lineHeight: 1.6 }}>Independent Saudi labels, one checkout. Every piece is shipped and stood behind by the brand that made it.</p>
-          <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 28, background: C.ink, color: C.warm, border: "none", padding: "13px 28px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Shop the edit</button>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>{t.eyebrow}</p>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(34px, 5vw, 56px)", lineHeight: 1.05, color: C.ink, margin: 0 }}>{t.heroTitle1}<br />{t.heroTitle2}</h1>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: C.muted, marginTop: 20, maxWidth: 420, lineHeight: 1.6 }}>{t.heroSubtitle}</p>
+          <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 28, background: C.ink, color: C.warm, border: "none", padding: "13px 28px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{t.shopTheEdit}</button>
         </div>
         <div className="sadaar-hero-grid" style={{ flex: "1 1 340px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
           {featured.slice(0, 4).map((p, i) => (
@@ -287,8 +403,8 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
         <>
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: "24px 24px 8px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 18 }}>
-              <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, margin: 0 }}>Curated brands</h2>
-              <button onClick={() => setView({ type: "brands" })} style={{ background: "none", border: "none", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.bronze, cursor: "pointer" }}>View all →</button>
+              <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, margin: 0 }}>{t.curatedBrands}</h2>
+              <button onClick={() => setView({ type: "brands" })} style={{ background: "none", border: "none", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.bronze, cursor: "pointer" }}>{t.viewAll}</button>
             </div>
             <div style={{ display: "flex", gap: 16, overflowX: "auto", paddingBottom: 8 }}>
               {brands.map((b) => (
@@ -301,36 +417,36 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
           </section>
 
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px 8px" }}>
-            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, marginBottom: 18 }}>Shop by category</h2>
+            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, marginBottom: 18 }}>{t.shopByCategory}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 14 }}>
               {CATEGORIES.map((c) => {
                 const tone = catTone[c];
                 return (
-                  <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ background: tone.bg, border: "none", padding: "34px 18px", cursor: "pointer", fontFamily: "Fraunces, serif", fontSize: 17, color: tone.fg, textAlign: "left" }}>{c}</button>
+                  <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={{ background: tone.bg, border: "none", padding: "34px 18px", cursor: "pointer", fontFamily: "Fraunces, serif", fontSize: 17, color: tone.fg, textAlign: "left" }}>{categoryLabel(c)}</button>
                 );
               })}
             </div>
           </section>
 
           <section style={{ maxWidth: 900, margin: "0 auto", padding: "56px 24px 8px", textAlign: "center" }}>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>Our story</p>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>{t.ourStory}</p>
             <h2 style={{ fontFamily: "Fraunces, serif", fontStyle: "italic", fontWeight: 500, fontSize: "clamp(22px, 3vw, 30px)", color: C.ink, lineHeight: 1.4, margin: "0 auto", maxWidth: 720 }}>
-              Saudi fashion has never lacked talent — it's lacked a single front door. SADAAR brings independent Saudi labels together under one roof, without asking any of them to change what makes them theirs.
+              {t.ourStoryText}
             </h2>
           </section>
 
           <section style={{ maxWidth: 1180, margin: "48px auto 0", padding: "36px 24px", background: C.deep, color: C.sand, display: "flex", flexWrap: "wrap", gap: 20, justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, margin: 0 }}>Are you a Saudi fashion brand?</p>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#C9CDBF", marginTop: 6 }}>Join SADAAR and reach shoppers looking for exactly what you make.</p>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, margin: 0 }}>{t.joinQuestion}</p>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#C9CDBF", marginTop: 6 }}>{t.joinSubtext}</p>
             </div>
             <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ background: C.sand, color: C.ink, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", textDecoration: "none", display: "inline-block" }}>
-              Apply to sell
+              {t.applyToSell}
             </a>
           </section>
 
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 24px 8px" }}>
-            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, marginBottom: 18 }}>This week's edit</h2>
+            <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink, marginBottom: 18 }}>{t.thisWeeksEdit}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "28px 20px" }}>
               {featured.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} />)}
             </div>
@@ -351,6 +467,7 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { t, categoryLabel } = useLang();
 
   useEffect(() => {
     setLoading(true);
@@ -386,32 +503,32 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search pieces..."
+          placeholder={t.searchPlaceholder}
           style={{ width: "100%", border: `1px solid ${C.line}`, padding: "8px 10px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, marginBottom: 20, boxSizing: "border-box" }}
         />
 
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Category</p>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{t.category}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
           {["all", ...CATEGORIES].map((c) => (
-            <button key={c} onClick={() => setCat(c)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: cat === c ? C.ink : C.muted, fontWeight: cat === c ? 600 : 400 }}>{c === "all" ? "All" : c}</button>
+            <button key={c} onClick={() => setCat(c)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: cat === c ? C.ink : C.muted, fontWeight: cat === c ? 600 : 400 }}>{c === "all" ? t.all : categoryLabel(c)}</button>
           ))}
         </div>
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Brand</p>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{t.brand}</p>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
-          {[{ id: "all", name: "All" }, ...brands].map((b) => (
+          {[{ id: "all", name: t.all }, ...brands].map((b) => (
             <button key={b.id} onClick={() => setBrand(String(b.id))} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: brand === String(b.id) ? C.ink : C.muted, fontWeight: brand === String(b.id) ? 600 : 400 }}>{b.name}</button>
           ))}
         </div>
 
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>Price (SAR)</p>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{t.price}</p>
         <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
-          <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} type="number" placeholder="Min" style={{ width: "50%", border: `1px solid ${C.line}`, padding: "7px 8px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, boxSizing: "border-box" }} />
-          <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} type="number" placeholder="Max" style={{ width: "50%", border: `1px solid ${C.line}`, padding: "7px 8px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, boxSizing: "border-box" }} />
+          <input value={minPrice} onChange={(e) => setMinPrice(e.target.value)} type="number" placeholder={t.min} style={{ width: "50%", border: `1px solid ${C.line}`, padding: "7px 8px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, boxSizing: "border-box" }} />
+          <input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)} type="number" placeholder={t.max} style={{ width: "50%", border: `1px solid ${C.line}`, padding: "7px 8px", fontFamily: "Inter, sans-serif", fontSize: 13, background: C.warm, color: C.char, boxSizing: "border-box" }} />
         </div>
 
         {activeFilterCount > 0 && (
           <button onClick={clearFilters} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.bronze, textDecoration: "underline" }}>
-            Clear filters ({activeFilterCount})
+            {t.clearFilters} ({activeFilterCount})
           </button>
         )}
         </div>
@@ -419,12 +536,12 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
 
       <div style={{ flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{loading ? "..." : `${products.length} pieces`}</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{loading ? "..." : `${products.length} ${t.pieces}`}</p>
           <select value={sort} onChange={(e) => setSort(e.target.value)} style={{ fontFamily: "Inter, sans-serif", fontSize: 13, border: `1px solid ${C.line}`, padding: "6px 10px", background: C.warm, color: C.char }}>
-            <option value="featured">Newest</option>
-            <option value="price-asc">Price: low to high</option>
-            <option value="price-desc">Price: high to low</option>
-            <option value="name-asc">Name: A to Z</option>
+            <option value="featured">{t.sortNewest}</option>
+            <option value="price-asc">{t.sortPriceAsc}</option>
+            <option value="price-desc">{t.sortPriceDesc}</option>
+            <option value="name-asc">{t.sortNameAsc}</option>
           </select>
         </div>
         {loading && <Loading />}
@@ -436,9 +553,9 @@ function Browse({ initialCat, openProduct, brands, wishlistIds, onToggleWishlist
         )}
         {!loading && !error && products.length === 0 && (
           <div style={{ textAlign: "center", padding: "40px 0" }}>
-            <p style={{ fontFamily: "Inter, sans-serif", color: C.muted, marginBottom: 12 }}>No pieces match those filters.</p>
+            <p style={{ fontFamily: "Inter, sans-serif", color: C.muted, marginBottom: 12 }}>{t.noMatches}</p>
             {activeFilterCount > 0 && (
-              <button onClick={clearFilters} style={{ background: "none", border: `1px solid ${C.line}`, padding: "8px 16px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer", color: C.char }}>Clear filters</button>
+              <button onClick={clearFilters} style={{ background: "none", border: `1px solid ${C.line}`, padding: "8px 16px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer", color: C.char }}>{t.clearFilters}</button>
             )}
           </div>
         )}
@@ -483,6 +600,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
   const [related, setRelated] = useState([]);
+  const { t } = useLang();
 
   useEffect(() => {
     setLoading(true);
@@ -509,7 +627,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "28px 24px 64px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}><ChevronLeft size={16} /> Back</button>
+        <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}><ChevronLeft size={16} /> {t.back}</button>
         <button onClick={() => onToggleWishlist(product.id)} aria-label="Toggle wishlist" style={{ background: "none", border: `1px solid ${C.line}`, borderRadius: "50%", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
           <Heart size={16} color={C.ink} fill={wishlisted ? C.ink : "none"} />
         </button>
@@ -522,17 +640,17 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 18, color: C.char, marginBottom: 20 }}>{money(product.price)}</p>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, lineHeight: 1.6, marginBottom: 24 }}>{product.description}</p>
 
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>Size</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>{t.size}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 22 }}>
             {product.variants.map((v) => (
               <button key={v.id} disabled={v.stock_qty === 0} onClick={() => setVariantId(v.id)} style={{ padding: "8px 14px", border: `1px solid ${variantId === v.id ? C.ink : C.line}`, background: variantId === v.id ? C.ink : "none", color: v.stock_qty === 0 ? C.line : variantId === v.id ? C.warm : C.char, fontFamily: "Inter, sans-serif", fontSize: 13, cursor: v.stock_qty === 0 ? "not-allowed" : "pointer" }}>
-                {v.size}{v.stock_qty === 0 ? " (sold out)" : ""}
+                {v.size}{v.stock_qty === 0 ? ` (${t.soldOut})` : ""}
               </button>
             ))}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 22 }}>
-            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, margin: 0 }}>Qty</p>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, margin: 0 }}>{t.qty}</p>
             <div style={{ display: "flex", alignItems: "center", border: `1px solid ${C.line}` }}>
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} style={{ background: "none", border: "none", padding: "6px 10px", cursor: "pointer" }}><Minus size={14} /></button>
               <span style={{ padding: "0 10px", fontFamily: "Inter, sans-serif", fontSize: 14 }}>{qty}</span>
@@ -545,16 +663,16 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
             onClick={() => { onAddToCart(product, variant, qty); setAdded(true); setTimeout(() => setAdded(false), 1600); }}
             style={{ width: "100%", background: !variant || variant.stock_qty === 0 ? C.line : C.ink, color: C.warm, border: "none", padding: "14px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: !variant || variant.stock_qty === 0 ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           >
-            {added ? <><Check size={16} /> Added to cart</> : variant?.stock_qty === 0 ? "Sold out" : "Add to cart"}
+            {added ? <><Check size={16} /> {t.addedToCart}</> : variant?.stock_qty === 0 ? t.soldOut : t.addToCart}
           </button>
 
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 16, borderTop: `1px solid ${C.line}`, paddingTop: 16 }}>Shipped directly by {product.brand_name}, curated and guaranteed by SADAAR.</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 16, borderTop: `1px solid ${C.line}`, paddingTop: 16 }}>{t.shippedBy(product.brand_name)}</p>
         </div>
       </div>
 
       {related.length > 0 && openProduct && (
         <div style={{ marginTop: 56 }}>
-          <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink, marginBottom: 18 }}>You might also like</h2>
+          <h2 style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink, marginBottom: 18 }}>{t.youMightAlsoLike}</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "24px 20px" }}>
             {related.map((p) => (
               <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={(wishlistIds || []).includes(p.id)} onToggleWishlist={onToggleWishlist} />
@@ -569,32 +687,33 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
 function Cart({ items, updateQty, removeItem, setView }) {
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
   const shipping = estimateShipping(items);
+  const { t } = useLang();
   if (items.length === 0) {
     return (
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
         <ShoppingBag size={32} color={C.line} style={{ marginBottom: 16 }} />
-        <p style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink }}>Your bag is empty</p>
-        <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 16, background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Shop the edit</button>
+        <p style={{ fontFamily: "Fraunces, serif", fontSize: 22, color: C.ink }}>{t.bagEmpty}</p>
+        <button onClick={() => setView({ type: "browse" })} style={{ marginTop: 16, background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{t.shopTheEdit}</button>
       </div>
     );
   }
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px 64px" }}>
-      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>Your bag</h1>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>{t.yourBag}</h1>
       {items.map((item, idx) => (
         <div key={idx} className="sadaar-cart-row" style={{ display: "flex", gap: 18, padding: "18px 0", borderBottom: `1px solid ${C.line}` }}>
           <div style={{ width: 100, flexShrink: 0 }}><Swatch product={item.product} height={120} /></div>
           <div style={{ flex: 1 }}>
             <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{item.product.brand_name}</p>
             <p style={{ margin: "4px 0", fontFamily: "Fraunces, serif", fontSize: 16, color: C.ink }}>{item.product.name}</p>
-            <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>Size {item.variant.size}</p>
+            <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{t.size} {item.variant.size}</p>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 10 }}>
               <div style={{ display: "flex", alignItems: "center", border: `1px solid ${C.line}` }}>
                 <button onClick={() => updateQty(idx, -1)} style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer" }}><Minus size={12} /></button>
                 <span style={{ padding: "0 8px", fontSize: 13, fontFamily: "Inter, sans-serif" }}>{item.qty}</span>
                 <button onClick={() => updateQty(idx, 1)} style={{ background: "none", border: "none", padding: "4px 8px", cursor: "pointer" }}><Plus size={12} /></button>
               </div>
-              <button onClick={() => removeItem(idx)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "Inter, sans-serif", fontSize: 12, textDecoration: "underline" }}>Remove</button>
+              <button onClick={() => removeItem(idx)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "Inter, sans-serif", fontSize: 12, textDecoration: "underline" }}>{t.remove}</button>
             </div>
           </div>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.ink, fontWeight: 500 }}>{money(item.product.price * item.qty)}</p>
@@ -602,20 +721,20 @@ function Cart({ items, updateQty, removeItem, setView }) {
       ))}
       <div style={{ padding: "20px 0", fontFamily: "Inter, sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <p style={{ fontSize: 15, color: C.char, margin: 0 }}>Subtotal</p>
+          <p style={{ fontSize: 15, color: C.char, margin: 0 }}>{t.subtotal}</p>
           <p style={{ fontSize: 15, color: C.ink, margin: 0 }}>{money(subtotal)}</p>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-          <p style={{ fontSize: 15, color: C.char, margin: 0 }}>Shipping</p>
-          <p style={{ fontSize: 15, color: shipping === 0 ? "#2F5B3C" : C.ink, margin: 0 }}>{shipping === 0 ? "Free" : money(shipping)}</p>
+          <p style={{ fontSize: 15, color: C.char, margin: 0 }}>{t.shipping}</p>
+          <p style={{ fontSize: 15, color: shipping === 0 ? "#2F5B3C" : C.ink, margin: 0 }}>{shipping === 0 ? t.free : money(shipping)}</p>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 8, borderTop: `1px solid ${C.line}` }}>
-          <p style={{ fontSize: 15, color: C.char, fontWeight: 600, margin: 0 }}>Estimated total</p>
+          <p style={{ fontSize: 15, color: C.char, fontWeight: 600, margin: 0 }}>{t.estimatedTotal}</p>
           <p style={{ fontSize: 15, color: C.ink, fontWeight: 600, margin: 0 }}>{money(subtotal + shipping)}</p>
         </div>
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 10 }}>Shipping is calculated per brand (SAR {SHIPPING_FEE_PER_BRAND}, free over {money(FREE_SHIPPING_THRESHOLD)} per brand) since each brand ships separately. Estimated delivery: 3–5 business days.</p>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 10 }}>{t.shippingNote(SHIPPING_FEE_PER_BRAND, FREE_SHIPPING_THRESHOLD)}</p>
       </div>
-      <button onClick={() => setView({ type: "checkout" })} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Checkout</button>
+      <button onClick={() => setView({ type: "checkout" })} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{t.checkout}</button>
     </div>
   );
 }
@@ -623,6 +742,7 @@ function Cart({ items, updateQty, removeItem, setView }) {
 function Checkout({ items, setView, clearCart }) {
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
   const shipping = estimateShipping(items);
+  const { t } = useLang();
   const [form, setForm] = useState({ fullName: "", email: "", phone: "", city: "", address: "" });
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState(null);
@@ -664,7 +784,7 @@ function Checkout({ items, setView, clearCart }) {
 
   const placeOrder = async () => {
     if (!form.fullName || !form.phone || !form.city || !form.address) {
-      setError("Please fill in all fields.");
+      setError(t.fillAllFields);
       return;
     }
     setPlacing(true);
@@ -758,10 +878,10 @@ function Checkout({ items, setView, clearCart }) {
     return (
       <div style={{ maxWidth: 560, margin: "0 auto", padding: "80px 24px", textAlign: "center" }}>
         <Check size={30} color={C.ink} style={{ marginBottom: 16 }} />
-        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>Payment received</h1>
+        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>{t.paymentReceived}</h1>
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, marginBottom: 4 }}>Order #{order.orderId} — {money(order.total)}</p>
-        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Each brand in your bag has been notified to fulfill their item.</p>
-        <button onClick={() => setView({ type: "home" })} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Back to SADAAR</button>
+        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>{t.paymentReceivedNote}</p>
+        <button onClick={() => setView({ type: "home" })} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{t.backToSadaar}</button>
       </div>
     );
   }
@@ -770,9 +890,9 @@ function Checkout({ items, setView, clearCart }) {
   if (order) {
     return (
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "32px 24px 64px" }}>
-        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>Payment</h1>
+        <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>{t.payment}</h1>
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}>Order #{order.orderId} — {money(order.total)}</p>
-        {!publishableKey && <ErrorBox message="payment gateway isn't configured yet on the backend (MOYASAR_PUBLISHABLE_KEY missing)" />}
+        {!publishableKey && <ErrorBox message={t.paymentGatewayMissing} />}
         {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 12 }}>{error}</p>}
         {debugMsg && <p style={{ color: C.muted, fontFamily: "monospace", fontSize: 11, marginBottom: 12, whiteSpace: "pre-wrap" }}>{debugMsg}</p>}
         <div className="mysr-form" ref={formRef} />
@@ -782,27 +902,27 @@ function Checkout({ items, setView, clearCart }) {
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 24px 64px" }}>
-      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>Checkout</h1>
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Enter your shipping details, then you'll pay by card on the next step.</p>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>{t.checkout}</h1>
+      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>{t.checkoutSubtitle}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-        <input placeholder="Full name" value={form.fullName} onChange={set("fullName")} style={inputStyle} />
-        <input placeholder="Email (optional)" value={form.email} onChange={set("email")} style={inputStyle} />
-        <input placeholder="Phone number" value={form.phone} onChange={set("phone")} style={inputStyle} />
-        <input placeholder="City" value={form.city} onChange={set("city")} style={inputStyle} />
-        <input placeholder="Address" value={form.address} onChange={set("address")} style={inputStyle} />
+        <input placeholder={t.fullName} value={form.fullName} onChange={set("fullName")} style={inputStyle} />
+        <input placeholder={t.emailOptional} value={form.email} onChange={set("email")} style={inputStyle} />
+        <input placeholder={t.phoneNumber} value={form.phone} onChange={set("phone")} style={inputStyle} />
+        <input placeholder={t.city} value={form.city} onChange={set("city")} style={inputStyle} />
+        <input placeholder={t.address} value={form.address} onChange={set("address")} style={inputStyle} />
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {promo ? (
           <div style={{ flex: 1, display: "flex", justifyContent: "space-between", alignItems: "center", border: `1px solid #2F5B3C`, padding: "10px 12px", fontFamily: "Inter, sans-serif", fontSize: 13, color: "#2F5B3C" }}>
-            <span>Code "{promo.code}" applied</span>
-            <button onClick={removePromo} style={{ background: "none", border: "none", cursor: "pointer", color: "#2F5B3C", textDecoration: "underline", fontSize: 12 }}>Remove</button>
+            <span>{t.codeApplied(promo.code)}</span>
+            <button onClick={removePromo} style={{ background: "none", border: "none", cursor: "pointer", color: "#2F5B3C", textDecoration: "underline", fontSize: 12 }}>{t.remove}</button>
           </div>
         ) : (
           <>
-            <input placeholder="Promo code" value={promoInput} onChange={(e) => setPromoInput(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+            <input placeholder={t.promoCode} value={promoInput} onChange={(e) => setPromoInput(e.target.value)} style={{ ...inputStyle, flex: 1 }} />
             <button onClick={applyPromo} disabled={checkingPromo} style={{ background: "none", border: `1px solid ${C.ink}`, padding: "0 18px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer", color: C.char }}>
-              {checkingPromo ? "Checking..." : "Apply"}
+              {checkingPromo ? t.checking : t.apply}
             </button>
           </>
         )}
@@ -812,26 +932,26 @@ function Checkout({ items, setView, clearCart }) {
       {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 12 }}>{error}</p>}
       <div style={{ borderTop: `1px solid ${C.line}`, paddingTop: 14, fontFamily: "Inter, sans-serif" }}>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Subtotal</p>
+          <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>{t.subtotal}</p>
           <p style={{ fontSize: 14, color: C.char, margin: 0 }}>{money(subtotal)}</p>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-          <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>Shipping</p>
-          <p style={{ fontSize: 14, color: shipping === 0 ? "#2F5B3C" : C.char, margin: 0 }}>{shipping === 0 ? "Free" : money(shipping)}</p>
+          <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>{t.shipping}</p>
+          <p style={{ fontSize: 14, color: shipping === 0 ? "#2F5B3C" : C.char, margin: 0 }}>{shipping === 0 ? t.free : money(shipping)}</p>
         </div>
         {discountAmount > 0 && (
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-            <p style={{ fontSize: 14, color: "#2F5B3C", margin: 0 }}>Discount</p>
+            <p style={{ fontSize: 14, color: "#2F5B3C", margin: 0 }}>{t.discount}</p>
             <p style={{ fontSize: 14, color: "#2F5B3C", margin: 0 }}>-{money(discountAmount)}</p>
           </div>
         )}
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <p style={{ fontSize: 15 }}>Total due</p>
+          <p style={{ fontSize: 15 }}>{t.totalDue}</p>
           <p style={{ fontSize: 15, fontWeight: 600 }}>{money(total)}</p>
         </div>
       </div>
       <button onClick={placeOrder} disabled={placing} style={{ width: "100%", background: C.ink, color: C.warm, border: "none", padding: "15px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: placing ? "default" : "pointer", opacity: placing ? 0.7 : 1, marginTop: 16 }}>
-        {placing ? "Placing order..." : "Continue to payment"}
+        {placing ? t.placingOrder : t.continueToPayment}
       </button>
     </div>
   );
@@ -842,6 +962,7 @@ const inputStyle = { border: `1px solid ${C.line}`, padding: "12px 14px", fontFa
 function Wishlist({ wishlistIds, onToggleWishlist, openProduct, setView }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useLang();
 
   useEffect(() => {
     if (wishlistIds.length === 0) {
@@ -857,14 +978,14 @@ function Wishlist({ wishlistIds, onToggleWishlist, openProduct, setView }) {
 
   return (
     <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 64px" }}>
-      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>Your wishlist</h1>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>{t.yourWishlist}</h1>
       {loading && <Loading />}
       {!loading && products.length === 0 && (
         <div style={{ textAlign: "center", padding: "60px 24px" }}>
           <Heart size={28} color={C.line} style={{ marginBottom: 14 }} />
-          <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>Nothing saved yet</p>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 6, marginBottom: 16 }}>Tap the heart on any piece to save it here for later.</p>
-          <button onClick={() => setView({ type: "browse" })} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Shop the edit</button>
+          <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>{t.nothingSaved}</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 6, marginBottom: 16 }}>{t.nothingSavedSubtext}</p>
+          <button onClick={() => setView({ type: "browse" })} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{t.shopTheEdit}</button>
         </div>
       )}
       {!loading && products.length > 0 && (
@@ -884,12 +1005,13 @@ function TrackOrder() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useLang();
 
   const lookup = async () => {
     setError(null);
     setOrder(null);
     if (!orderId.trim() || !contact.trim()) {
-      setError("Enter both your order number and the email or phone you used.");
+      setError(t.enterOrderAndContact);
       return;
     }
     setLoading(true);
@@ -905,15 +1027,15 @@ function TrackOrder() {
 
   return (
     <div style={{ maxWidth: 560, margin: "0 auto", padding: "48px 24px 64px" }}>
-      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 6 }}>Track your order</h1>
-      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>Enter your order number and the email or phone you used at checkout.</p>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 6 }}>{t.trackYourOrder}</h1>
+      <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>{t.trackSubtitle}</p>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 8 }}>
-        <input placeholder="Order number (e.g. 17)" value={orderId} onChange={(e) => setOrderId(e.target.value)} style={inputStyle} />
-        <input placeholder="Email or phone used at checkout" value={contact} onChange={(e) => setContact(e.target.value)} style={inputStyle} />
+        <input placeholder={t.orderNumberPlaceholder} value={orderId} onChange={(e) => setOrderId(e.target.value)} style={inputStyle} />
+        <input placeholder={t.contactPlaceholder} value={contact} onChange={(e) => setContact(e.target.value)} style={inputStyle} />
       </div>
       {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, margin: "8px 0" }}>{error}</p>}
       <button onClick={lookup} disabled={loading} style={{ marginTop: 8, background: C.ink, color: C.warm, border: "none", padding: "13px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
-        {loading ? "Looking up..." : "Track order"}
+        {loading ? t.lookingUp : t.trackOrderBtn}
       </button>
 
       {order && (
@@ -928,7 +1050,7 @@ function TrackOrder() {
               <div>
                 <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{i.brand_name}</p>
                 <p style={{ margin: "2px 0 0", fontFamily: "Fraunces, serif", fontSize: 15, color: C.ink }}>{i.product_name} × {i.quantity}</p>
-                {i.tracking_number && <p style={{ margin: "4px 0 0", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>Tracking: {i.tracking_number}</p>}
+                {i.tracking_number && <p style={{ margin: "4px 0 0", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>{t.tracking}: {i.tracking_number}</p>}
               </div>
               <span style={{
                 fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase",
@@ -940,15 +1062,15 @@ function TrackOrder() {
           ))}
           <div style={{ paddingTop: 16, fontFamily: "Inter, sans-serif" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>Subtotal</p>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{t.subtotal}</p>
               <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{money(order.subtotal)}</p>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>Shipping</p>
-              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{Number(order.shipping_fee) === 0 ? "Free" : money(order.shipping_fee)}</p>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{t.shipping}</p>
+              <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>{Number(order.shipping_fee) === 0 ? t.free : money(order.shipping_fee)}</p>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <p style={{ fontSize: 14, color: C.char, margin: 0 }}>Total</p>
+              <p style={{ fontSize: 14, color: C.char, margin: 0 }}>{t.total}</p>
               <p style={{ fontSize: 14, color: C.ink, fontWeight: 600, margin: 0 }}>{money(order.total)}</p>
             </div>
           </div>
@@ -961,6 +1083,23 @@ function TrackOrder() {
 export default function SadaarMarketplace() {
   const [view, setView] = useState({ type: "home" });
   const [wishlistIds, setWishlistIdsState] = useState(() => getWishlistIds());
+  const [lang, setLang] = useState(() => getLang());
+
+  const toggleLang = useCallback(() => {
+    setLang((prev) => {
+      const next = prev === "en" ? "ar" : "en";
+      try { localStorage.setItem(LANG_KEY, next); } catch {}
+      return next;
+    });
+  }, []);
+
+  const langCtx = useMemo(() => ({
+    lang,
+    t: T[lang],
+    dir: lang === "ar" ? "rtl" : "ltr",
+    categoryLabel: (c) => CATEGORY_LABELS[lang][c] || c,
+    toggleLang,
+  }), [lang, toggleLang]);
 
   const toggleWishlist = useCallback((productId) => {
     setWishlistIdsState((prev) => {
@@ -1052,7 +1191,8 @@ export default function SadaarMarketplace() {
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
 
   return (
-    <div style={{ background: C.sand, minHeight: "100vh" }}>
+    <LangContext.Provider value={langCtx}>
+    <div dir={langCtx.dir} className={lang === "ar" ? "sadaar-rtl" : ""} style={{ background: C.sand, minHeight: "100vh" }}>
       <style>{FONTS}</style>
 
       {returningPayment && (
@@ -1061,22 +1201,22 @@ export default function SadaarMarketplace() {
             <>
               <Loader2 size={28} color={C.ink} style={{ animation: "spin 1s linear infinite", marginBottom: 16 }} />
               <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
-              <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink }}>Confirming your payment...</p>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: 20, color: C.ink }}>{langCtx.t.confirmingPayment}</p>
             </>
           )}
           {returningPayment.status === "paid" && (
             <>
               <Check size={30} color={C.ink} style={{ marginBottom: 16 }} />
-              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>Payment received</h1>
-              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, marginBottom: 24 }}>Order #{returningPayment.orderId} — {money(returningPayment.total)}. A confirmation email is on its way.</p>
-              <button onClick={() => { setReturningPayment(null); setView({ type: "home" }); }} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Back to SADAAR</button>
+              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 }}>{langCtx.t.paymentReceived}</h1>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted, marginBottom: 24 }}>{langCtx.t.confirmationEmailNote(returningPayment.orderId, money(returningPayment.total))}</p>
+              <button onClick={() => { setReturningPayment(null); setView({ type: "home" }); }} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{langCtx.t.backToSadaar}</button>
             </>
           )}
           {returningPayment.status === "error" && (
             <>
-              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 8 }}>We couldn't confirm that payment</h1>
+              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 8 }}>{langCtx.t.couldNotConfirmPayment}</h1>
               <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#A3402F", marginBottom: 24 }}>{returningPayment.message}</p>
-              <button onClick={() => { setReturningPayment(null); setView({ type: "home" }); }} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>Back to SADAAR</button>
+              <button onClick={() => { setReturningPayment(null); setView({ type: "home" }); }} style={{ background: C.ink, color: C.warm, border: "none", padding: "12px 24px", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer" }}>{langCtx.t.backToSadaar}</button>
             </>
           )}
         </div>
@@ -1090,13 +1230,13 @@ export default function SadaarMarketplace() {
           {view.type === "browse" && <Browse initialCat={view.cat} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "brands" && (
             <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px 64px" }}>
-              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>All brands</h1>
+              <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>{langCtx.t.allBrands}</h1>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 16 }}>
                 {brands.map((b) => (
                   <div key={b.id} style={{ border: `1px solid ${C.line}`, padding: 20, background: C.warm }}>
                     <p style={{ margin: 0, fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>{b.name}</p>
                     <p style={{ margin: "6px 0 0", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{b.description}</p>
-                    <button onClick={() => setView({ type: "browse", cat: b.category })} style={{ marginTop: 14, background: "none", border: `1px solid ${C.ink}`, padding: "8px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer" }}>Shop {b.name}</button>
+                    <button onClick={() => setView({ type: "browse", cat: b.category })} style={{ marginTop: 14, background: "none", border: `1px solid ${C.ink}`, padding: "8px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer" }}>{langCtx.t.shopBrand(b.name)}</button>
                   </div>
                 ))}
               </div>
@@ -1112,5 +1252,6 @@ export default function SadaarMarketplace() {
         </>
       )}
     </div>
+    </LangContext.Provider>
   );
 }
