@@ -176,6 +176,7 @@ const T = {
     sendMessage: "Send message", sending: "Sending...", messageSent: "Message sent",
     messageSentNote: "Thanks for reaching out — we'll get back to you by email.",
     contactNav: "Contact",
+    brandSignIn: "Brand sign in",
   },
   ar: {
     home: "الرئيسية", shopAll: "تسوقي الكل", brandsNav: "الماركات", wishlistNav: "المفضلة", trackOrderNav: "تتبع الطلب",
@@ -222,6 +223,7 @@ const T = {
     sendMessage: "إرسال الرسالة", sending: "جارٍ الإرسال...", messageSent: "تم إرسال الرسالة",
     messageSentNote: "شكرًا لتواصلك — سنرد عليك عبر البريد الإلكتروني.",
     contactNav: "تواصل معنا",
+    brandSignIn: "تسجيل دخول الماركات",
   },
 };
 
@@ -366,6 +368,7 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
           <button onClick={() => { setView({ type: "wishlist" }); setMenuOpen(false); }} style={navBtn}>{t.wishlistNav}</button>
           <button onClick={() => { setView({ type: "track" }); setMenuOpen(false); }} style={navBtn}>{t.trackOrderNav}</button>
           <button onClick={() => { setView({ type: "contact" }); setMenuOpen(false); }} style={navBtn}>{t.contactNav}</button>
+          <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ ...navBtn, textDecoration: "none" }}>{t.brandSignIn}</a>
         </div>
       )}
     </header>
@@ -393,6 +396,7 @@ function Footer({ setView }) {
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerSadaar}</div>
           <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
           <button onClick={() => setView({ type: "contact" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.contactNav}</button>
+          <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.brandSignIn}</a>
           <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C9CDBF", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
         </div>
       </div>
