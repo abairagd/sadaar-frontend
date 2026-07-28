@@ -197,6 +197,8 @@ const T = {
     trackYourOrder: "Track your order", trackSubtitle: "Enter your order number and the email or phone you used at checkout.",
     orderNumberPlaceholder: "Order number (e.g. 17)", contactPlaceholder: "Email or phone used at checkout", trackOrderBtn: "Track order", lookingUp: "Looking up...",
     tracking: "Tracking", total: "Total",
+    requestCancellation: "Request cancellation", cancellationRequested: "Cancellation requested — waiting on the brand to review.",
+    cancellationDenied: "Cancellation request was declined.", cancellationRefunded: "Cancelled and refunded.",
     yourWishlist: "Your wishlist", nothingSaved: "Nothing saved yet", nothingSavedSubtext: "Tap the heart on any piece to save it here for later.",
     footerTagline: "One marketplace for Saudi fashion — every brand kept true to its own hand, delivered through one trusted checkout.",
     footerShop: "Shop", footerSadaar: "SADAAR", footerJoin: "Join as a brand", footerCopyright: "© 2026 SADAAR. Every product ships direct from its brand.",
@@ -247,6 +249,8 @@ const T = {
     trackYourOrder: "تتبع طلبك", trackSubtitle: "أدخل رقم الطلب والبريد الإلكتروني أو رقم الجوال المستخدم عند الدفع.",
     orderNumberPlaceholder: "رقم الطلب (مثال: 17)", contactPlaceholder: "البريد الإلكتروني أو الجوال المستخدم عند الدفع", trackOrderBtn: "تتبع الطلب", lookingUp: "جارٍ البحث...",
     tracking: "رقم التتبع", total: "الإجمالي",
+    requestCancellation: "طلب إلغاء", cancellationRequested: "تم إرسال طلب الإلغاء — بانتظار مراجعة الماركة.",
+    cancellationDenied: "تم رفض طلب الإلغاء.", cancellationRefunded: "تم الإلغاء واسترداد المبلغ.",
     yourWishlist: "قائمة المفضلة", nothingSaved: "لا يوجد شيء محفوظ بعد", nothingSavedSubtext: "اضغطي على القلب في أي قطعة لحفظها هنا لاحقًا.",
     footerTagline: "سوق واحد للأزياء السعودية — كل ماركة تحافظ على هويتها، ويصلك عبر عملية شراء واحدة موثوقة.",
     footerShop: "تسوق", footerSadaar: "سدّار", footerJoin: "انضم كماركة", footerCopyright: "© 2026 سدّار. كل منتج يُشحن مباشرة من ماركته.",
@@ -1347,6 +1351,8 @@ function TrackOrder() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [cancelingId, setCancelingId] = useState(null);
+  const [cancelError, setCancelError] = useState("");
   const { t } = useLang();
 
   const lookup = async () => {
@@ -1364,6 +1370,19 @@ function TrackOrder() {
       setError(e.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const requestCancellation = async (itemId) => {
+    setCancelingId(itemId);
+    setCancelError("");
+    try {
+      await api(`/orders/${orderId.trim()}/items/${itemId}/request-cancellation`, { method: "POST", body: JSON.stringify({ contact: contact.trim() }) });
+      await lookup();
+    } catch (e) {
+      setCancelError(e.message);
+    } finally {
+      setCancelingId(null);
     }
   };
 
@@ -1387,19 +1406,36 @@ function TrackOrder() {
             <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.05em", color: order.payment_status === "paid" ? "#2F5B3C" : C.muted }}>{order.payment_status}</span>
           </div>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}>{order.shipping_city} · placed {new Date(order.created_at).toLocaleDateString()}</p>
+          {cancelError && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 12, margin: "8px 0" }}>{cancelError}</p>}
           {order.items.map((i) => (
-            <div key={i.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 0", borderBottom: `1px solid ${C.line}` }}>
-              <div>
-                <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{i.brand_name}</p>
-                <p style={{ margin: "2px 0 0", fontFamily: "Fraunces, serif", fontSize: 15, color: C.ink }}>{i.product_name} × {i.quantity}</p>
-                {i.tracking_number && <p style={{ margin: "4px 0 0", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>{t.tracking}: {i.tracking_number}</p>}
+            <div key={i.id} style={{ padding: "12px 0", borderBottom: `1px solid ${C.line}` }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <p style={{ margin: 0, fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted }}>{i.brand_name}</p>
+                  <p style={{ margin: "2px 0 0", fontFamily: "Fraunces, serif", fontSize: 15, color: C.ink }}>{i.product_name} × {i.quantity}</p>
+                  {i.tracking_number && <p style={{ margin: "4px 0 0", fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>{t.tracking}: {i.tracking_number}</p>}
+                </div>
+                <span style={{
+                  fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase",
+                  padding: "3px 9px", borderRadius: 3,
+                  background: i.fulfillment_status === "pending" ? "#F3E6D8" : "#DDE7DB",
+                  color: i.fulfillment_status === "pending" ? "#8A5A1E" : "#2F5B3C",
+                }}>{i.fulfillment_status}</span>
               </div>
-              <span style={{
-                fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase",
-                padding: "3px 9px", borderRadius: 3,
-                background: i.fulfillment_status === "pending" ? "#F3E6D8" : "#DDE7DB",
-                color: i.fulfillment_status === "pending" ? "#8A5A1E" : "#2F5B3C",
-              }}>{i.fulfillment_status}</span>
+              {i.cancellation_status === "none" && i.fulfillment_status === "pending" && order.payment_status === "paid" && (
+                <button onClick={() => requestCancellation(i.id)} disabled={cancelingId === i.id} style={{ marginTop: 8, background: "none", border: `1px solid ${C.line}`, padding: "6px 12px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer", color: C.char }}>
+                  {cancelingId === i.id ? t.sending : t.requestCancellation}
+                </button>
+              )}
+              {i.cancellation_status === "requested" && (
+                <p style={{ marginTop: 8, fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8A5A1E" }}>{t.cancellationRequested}</p>
+              )}
+              {i.cancellation_status === "denied" && (
+                <p style={{ marginTop: 8, fontFamily: "Inter, sans-serif", fontSize: 12, color: C.danger }}>{t.cancellationDenied}</p>
+              )}
+              {i.cancellation_status === "refunded" && (
+                <p style={{ marginTop: 8, fontFamily: "Inter, sans-serif", fontSize: 12, color: "#2F5B3C" }}>{t.cancellationRefunded}</p>
+              )}
             </div>
           ))}
           <div style={{ paddingTop: 16, fontFamily: "Inter, sans-serif" }}>
