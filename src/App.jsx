@@ -344,10 +344,14 @@ function ErrorBox({ message }) {
 }
 
 function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView }) {
-  const { t, lang, toggleLang, categoryLabel } = useLang();
+  const { t, lang, toggleLang, categoryLabel, subcategoryLabel, productTypeLabel } = useLang();
+  const [hoveredSubcat, setHoveredSubcat] = useState(null);
   const isHomeActive = currentView.type === "home";
   const isBrandsActive = currentView.type === "brands";
   const activeCat = currentView.type === "browse" ? currentView.cat : null;
+  const activeSubcat = currentView.type === "browse" ? currentView.subcat : null;
+  const subcatsForActiveCat = activeCat && SUBCATEGORIES_BY_CATEGORY[activeCat] ? SUBCATEGORIES_BY_CATEGORY[activeCat] : null;
+
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 20, background: C.warm, borderBottom: `1px solid ${C.line}` }}>
       <div className="sadaar-header-row" style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -357,11 +361,11 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView 
             <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.bronze, marginTop: -2 }}>{t.tagline}</div>
           </button>
           <nav style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }} className="sadaar-top-nav">
-            <button onClick={() => setView({ type: "home" })} style={isHomeActive ? activeNavBtn : boldNavBtn}>{t.home}</button>
+            <button onClick={() => setView({ type: "home" })} style={isHomeActive ? activeNavBtn : inactiveNavBtn}>{t.home}</button>
             {CATEGORIES.map((c) => (
-              <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={activeCat === c ? activeNavBtn : boldNavBtn}>{categoryLabel(c)}</button>
+              <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={activeCat === c ? activeNavBtn : inactiveNavBtn}>{categoryLabel(c)}</button>
             ))}
-            <button onClick={() => setView({ type: "brands" })} style={isBrandsActive ? activeNavBtn : boldNavBtn}>{t.brandsNav}</button>
+            <button onClick={() => setView({ type: "brands" })} style={isBrandsActive ? activeNavBtn : inactiveNavBtn}>{t.brandsNav}</button>
           </nav>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -383,13 +387,48 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView 
           </button>
         </div>
       </div>
+
+      {subcatsForActiveCat && (
+        <div style={{ borderTop: `1px solid ${C.line}` }}>
+          <div style={{ maxWidth: 1180, margin: "0 auto", padding: "10px 24px", display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap" }}>
+            {subcatsForActiveCat.map((s) => (
+              <div key={s} onMouseEnter={() => setHoveredSubcat(s)} onMouseLeave={() => setHoveredSubcat(null)} style={{ position: "relative" }}>
+                <button
+                  onClick={() => setView({ type: "browse", cat: activeCat, subcat: s })}
+                  style={{ background: "none", border: "none", cursor: "pointer", outline: "none", fontFamily: "Inter, sans-serif", fontSize: 13, fontWeight: activeSubcat === s ? 700 : 400, color: activeSubcat === s ? C.ink : C.muted, padding: "2px 0" }}
+                >
+                  {subcategoryLabel(s)}
+                </button>
+                {hoveredSubcat === s && (PRODUCT_TYPES_BY_SUBCATEGORY[s] || []).length > 0 && (
+                  <div style={{ position: "absolute", top: "100%", insetInlineStart: 0, paddingTop: 10, zIndex: 30 }}>
+                    <div style={{ background: C.warm, border: `1px solid ${C.line}`, boxShadow: "0 8px 20px rgba(0,0,0,0.08)", minWidth: 200, maxHeight: 320, overflowY: "auto", padding: "10px 0" }}>
+                      {PRODUCT_TYPES_BY_SUBCATEGORY[s].map((pt) => (
+                        <button
+                          key={pt}
+                          onClick={() => { setView({ type: "browse", cat: activeCat, subcat: s, ptype: pt }); setHoveredSubcat(null); }}
+                          style={{ display: "block", width: "100%", textAlign: "start", background: "none", border: "none", cursor: "pointer", padding: "8px 18px", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char, outline: "none" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = C.sand)}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                        >
+                          {productTypeLabel(pt)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }
 
 const navBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0" };
-const boldNavBtn = { background: "none", border: "none", cursor: "pointer", color: C.ink, padding: "4px 0", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em" };
-const activeNavBtn = { ...boldNavBtn, color: C.bronze, borderBottom: `2px solid ${C.bronze}` };
+const boldNavBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em", outline: "none" };
+const activeNavBtn = { ...boldNavBtn, color: C.ink };
+const inactiveNavBtn = boldNavBtn;
 
 function Footer({ setView }) {
   const { t, categoryLabel } = useLang();
@@ -521,10 +560,10 @@ function Home({ setView, openProduct, products, brands, loading, error, wishlist
   );
 }
 
-function Browse({ initialCat, initialSubcat, openProduct, brands, wishlistIds, onToggleWishlist }) {
+function Browse({ initialCat, initialSubcat, initialPtype, openProduct, brands, wishlistIds, onToggleWishlist }) {
   const [cat, setCat] = useState(initialCat || "all");
   const [subcat, setSubcat] = useState(initialSubcat || "all");
-  const [ptype, setPtype] = useState("all");
+  const [ptype, setPtype] = useState(initialPtype || "all");
   const [brand, setBrand] = useState("all");
   const [sort, setSort] = useState("featured");
   const [search, setSearch] = useState("");
@@ -535,16 +574,20 @@ function Browse({ initialCat, initialSubcat, openProduct, brands, wishlistIds, o
   const [error, setError] = useState(null);
   const { t, categoryLabel, subcategoryLabel, productTypeLabel } = useLang();
   const isFirstCatRender = React.useRef(true);
+  const isFirstSubcatRender = React.useRef(true);
 
   // Reset subcategory whenever the top-level category changes, and reset
   // product type whenever the subcategory changes — each level depends on
-  // the one above it. Skip the very first run so an initialSubcat passed in
-  // (e.g. from the header's hover dropdown) doesn't get immediately wiped.
+  // the one above it. Skip the very first run so an initialSubcat/initialPtype
+  // passed in (e.g. from the header's dropdown) doesn't get immediately wiped.
   useEffect(() => {
     if (isFirstCatRender.current) { isFirstCatRender.current = false; return; }
     setSubcat("all");
   }, [cat]);
-  useEffect(() => { setPtype("all"); }, [subcat]);
+  useEffect(() => {
+    if (isFirstSubcatRender.current) { isFirstSubcatRender.current = false; return; }
+    setPtype("all");
+  }, [subcat]);
 
   useEffect(() => {
     setLoading(true);
@@ -1385,7 +1428,7 @@ export default function SadaarMarketplace() {
           <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} currentView={view} />
 
           {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
-          {view.type === "browse" && <Browse key={`${view.cat || "all"}-${view.subcat || "all"}`} initialCat={view.cat} initialSubcat={view.subcat} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
+          {view.type === "browse" && <Browse key={`${view.cat || "all"}-${view.subcat || "all"}-${view.ptype || "all"}`} initialCat={view.cat} initialSubcat={view.subcat} initialPtype={view.ptype} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "brands" && (
             <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px 64px" }}>
               <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 24 }}>{langCtx.t.allBrands}</h1>
