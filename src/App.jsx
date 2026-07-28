@@ -53,23 +53,18 @@ const CATEGORIES = ["Men", "Women"];
 // Women — the (category, subcategory) pair together disambiguates them, so
 // "Women > Shoes" and "Men > Shoes" filter correctly as separate groups.
 const SUBCATEGORIES_BY_CATEGORY = {
-  Men: ["Shoes", "Accessories", "Streetwear", "Shirts", "Pants", "Swimwear", "Thobes"],
-  Women: ["Shoes", "Accessories", "Abayas", "Streetwear", "Shirts", "Pants", "Swimwear", "Dresses"],
+  Men: ["Clothing", "Shoes", "Accessories", "Jewelry"],
+  Women: ["Clothing", "Shoes", "Accessories", "Jewelry"],
 };
 
 // Product types are the finest taxonomy level, keyed by subcategory. Same
 // philosophy as subcategories — free text on the backend, curated options
 // here for a consistent dropdown. Add more anytime by editing this list.
 const PRODUCT_TYPES_BY_SUBCATEGORY = {
-  Shirts: ["T-Shirts", "Button-Up Shirts", "Polo Shirts", "Sweatshirts", "Hoodies"],
-  Pants: ["Jeans", "Cargo Pants", "Chinos", "Joggers", "Shorts"],
-  Streetwear: ["Hoodies", "Sweatshirts", "Joggers", "Bomber Jackets"],
-  Swimwear: ["Swim Trunks", "Swim Shorts", "One-Piece", "Bikini"],
-  Thobes: ["Classic Thobe", "Modern Thobe"],
-  Abayas: ["Classic Abaya", "Embroidered Abaya", "Kimono Abaya"],
-  Dresses: ["Maxi Dress", "Midi Dress", "Evening Dress"],
+  Clothing: ["T-Shirts", "Button-Up Shirts", "Polo Shirts", "Sweatshirts", "Hoodies", "Jeans", "Cargo Pants", "Chinos", "Joggers", "Shorts", "Bomber Jackets", "Swim Trunks", "Swim Shorts", "One-Piece", "Bikini", "Classic Thobe", "Modern Thobe", "Classic Abaya", "Embroidered Abaya", "Kimono Abaya", "Maxi Dress", "Midi Dress", "Evening Dress"],
   Shoes: ["Sneakers", "Sandals", "Boots", "Heels", "Loafers"],
-  Accessories: ["Jewelry", "Bags", "Belts", "Watches", "Sunglasses"],
+  Accessories: ["Bags", "Belts", "Watches", "Sunglasses"],
+  Jewelry: ["Necklaces", "Rings", "Bracelets", "Earrings"],
 };
 
 const catTone = {
@@ -144,13 +139,13 @@ const CATEGORY_LABELS = {
 };
 
 const SUBCATEGORY_LABELS = {
-  en: { Shoes: "Shoes", Accessories: "Accessories", Streetwear: "Streetwear", Shirts: "Shirts", Pants: "Pants", Swimwear: "Swimwear", Thobes: "Thobes", Abayas: "Abayas", Dresses: "Dresses", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels" },
-  ar: { Shoes: "أحذية", Accessories: "إكسسوارات", Streetwear: "ستريت وير", Shirts: "قمصان", Pants: "بناطيل", Swimwear: "ملابس سباحة", Thobes: "أثواب", Abayas: "عبايات", Dresses: "فساتين", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي" },
+  en: { Clothing: "Clothing", Shoes: "Shoes", Accessories: "Accessories", Jewelry: "Jewelry" },
+  ar: { Clothing: "ملابس", Shoes: "أحذية", Accessories: "إكسسوارات", Jewelry: "مجوهرات" },
 };
 
 const PRODUCT_TYPE_LABELS = {
-  en: { "T-Shirts": "T-Shirts", "Button-Up Shirts": "Button-Up Shirts", "Polo Shirts": "Polo Shirts", Sweatshirts: "Sweatshirts", Hoodies: "Hoodies", Jeans: "Jeans", "Cargo Pants": "Cargo Pants", Chinos: "Chinos", Joggers: "Joggers", Shorts: "Shorts", "Bomber Jackets": "Bomber Jackets", "Swim Trunks": "Swim Trunks", "Swim Shorts": "Swim Shorts", "One-Piece": "One-Piece", Bikini: "Bikini", "Classic Thobe": "Classic Thobe", "Modern Thobe": "Modern Thobe", "Classic Abaya": "Classic Abaya", "Embroidered Abaya": "Embroidered Abaya", "Kimono Abaya": "Kimono Abaya", "Maxi Dress": "Maxi Dress", "Midi Dress": "Midi Dress", "Evening Dress": "Evening Dress", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels", Loafers: "Loafers", Jewelry: "Jewelry", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sunglasses: "Sunglasses" },
-  ar: { "T-Shirts": "تيشيرتات", "Button-Up Shirts": "قمصان بأزرار", "Polo Shirts": "قمصان بولو", Sweatshirts: "سويت شيرت", Hoodies: "هوديات", Jeans: "جينز", "Cargo Pants": "بنطال كارجو", Chinos: "بنطال تشينو", Joggers: "بنطال رياضي", Shorts: "شورت", "Bomber Jackets": "جاكيت بومبر", "Swim Trunks": "شورت سباحة", "Swim Shorts": "شورت سباحة", "One-Piece": "قطعة واحدة", Bikini: "بيكيني", "Classic Thobe": "ثوب كلاسيكي", "Modern Thobe": "ثوب عصري", "Classic Abaya": "عباية كلاسيكية", "Embroidered Abaya": "عباية مطرزة", "Kimono Abaya": "عباية كيمونو", "Maxi Dress": "فستان طويل", "Midi Dress": "فستان متوسط", "Evening Dress": "فستان سهرة", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي", Loafers: "لوفرز", Jewelry: "مجوهرات", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sunglasses: "نظارات شمسية" },
+  en: { "T-Shirts": "T-Shirts", "Button-Up Shirts": "Button-Up Shirts", "Polo Shirts": "Polo Shirts", Sweatshirts: "Sweatshirts", Hoodies: "Hoodies", Jeans: "Jeans", "Cargo Pants": "Cargo Pants", Chinos: "Chinos", Joggers: "Joggers", Shorts: "Shorts", "Bomber Jackets": "Bomber Jackets", "Swim Trunks": "Swim Trunks", "Swim Shorts": "Swim Shorts", "One-Piece": "One-Piece", Bikini: "Bikini", "Classic Thobe": "Classic Thobe", "Modern Thobe": "Modern Thobe", "Classic Abaya": "Classic Abaya", "Embroidered Abaya": "Embroidered Abaya", "Kimono Abaya": "Kimono Abaya", "Maxi Dress": "Maxi Dress", "Midi Dress": "Midi Dress", "Evening Dress": "Evening Dress", Sneakers: "Sneakers", Sandals: "Sandals", Boots: "Boots", Heels: "Heels", Loafers: "Loafers", Bags: "Bags", Belts: "Belts", Watches: "Watches", Sunglasses: "Sunglasses", Necklaces: "Necklaces", Rings: "Rings", Bracelets: "Bracelets", Earrings: "Earrings" },
+  ar: { "T-Shirts": "تيشيرتات", "Button-Up Shirts": "قمصان بأزرار", "Polo Shirts": "قمصان بولو", Sweatshirts: "سويت شيرت", Hoodies: "هوديات", Jeans: "جينز", "Cargo Pants": "بنطال كارجو", Chinos: "بنطال تشينو", Joggers: "بنطال رياضي", Shorts: "شورت", "Bomber Jackets": "جاكيت بومبر", "Swim Trunks": "شورت سباحة", "Swim Shorts": "شورت سباحة", "One-Piece": "قطعة واحدة", Bikini: "بيكيني", "Classic Thobe": "ثوب كلاسيكي", "Modern Thobe": "ثوب عصري", "Classic Abaya": "عباية كلاسيكية", "Embroidered Abaya": "عباية مطرزة", "Kimono Abaya": "عباية كيمونو", "Maxi Dress": "فستان طويل", "Midi Dress": "فستان متوسط", "Evening Dress": "فستان سهرة", Sneakers: "سنيكرز", Sandals: "صنادل", Boots: "بوت", Heels: "كعب عالي", Loafers: "لوفرز", Bags: "حقائب", Belts: "أحزمة", Watches: "ساعات", Sunglasses: "نظارات شمسية", Necklaces: "قلادات", Rings: "خواتم", Bracelets: "أساور", Earrings: "أقراط" },
 };
 
 const T = {
@@ -348,9 +343,11 @@ function ErrorBox({ message }) {
   );
 }
 
-function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
-  const { t, lang, toggleLang, categoryLabel, subcategoryLabel } = useLang();
-  const [hoveredCat, setHoveredCat] = useState(null);
+function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView }) {
+  const { t, lang, toggleLang, categoryLabel } = useLang();
+  const isHomeActive = currentView.type === "home";
+  const isBrandsActive = currentView.type === "brands";
+  const activeCat = currentView.type === "browse" ? currentView.cat : null;
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 20, background: C.warm, borderBottom: `1px solid ${C.line}` }}>
       <div className="sadaar-header-row" style={{ maxWidth: 1180, margin: "0 auto", padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
@@ -360,30 +357,11 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
             <div style={{ fontFamily: "Inter, sans-serif", fontSize: 9.5, letterSpacing: "0.18em", textTransform: "uppercase", color: C.bronze, marginTop: -2 }}>{t.tagline}</div>
           </button>
           <nav style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }} className="sadaar-top-nav">
-            <button onClick={() => setView({ type: "home" })} style={boldNavBtn}>{t.home}</button>
+            <button onClick={() => setView({ type: "home" })} style={isHomeActive ? activeNavBtn : boldNavBtn}>{t.home}</button>
             {CATEGORIES.map((c) => (
-              <div key={c} onMouseEnter={() => setHoveredCat(c)} onMouseLeave={() => setHoveredCat(null)} style={{ position: "relative" }}>
-                <button onClick={() => setView({ type: "browse", cat: c })} style={boldNavBtn}>{categoryLabel(c)}</button>
-                {hoveredCat === c && (SUBCATEGORIES_BY_CATEGORY[c] || []).length > 0 && (
-                  <div style={{ position: "absolute", top: "100%", insetInlineStart: 0, paddingTop: 10, zIndex: 30 }}>
-                    <div style={{ background: C.warm, border: `1px solid ${C.line}`, boxShadow: "0 8px 20px rgba(0,0,0,0.08)", minWidth: 180, padding: "10px 0" }}>
-                      {SUBCATEGORIES_BY_CATEGORY[c].map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => { setView({ type: "browse", cat: c, subcat: s }); setHoveredCat(null); }}
-                          style={{ display: "block", width: "100%", textAlign: "start", background: "none", border: "none", cursor: "pointer", padding: "8px 18px", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = C.sand)}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                        >
-                          {subcategoryLabel(s)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <button key={c} onClick={() => setView({ type: "browse", cat: c })} style={activeCat === c ? activeNavBtn : boldNavBtn}>{categoryLabel(c)}</button>
             ))}
-            <button onClick={() => setView({ type: "brands" })} style={boldNavBtn}>{t.brandsNav}</button>
+            <button onClick={() => setView({ type: "brands" })} style={isBrandsActive ? activeNavBtn : boldNavBtn}>{t.brandsNav}</button>
           </nav>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -411,6 +389,7 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick }) {
 
 const navBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0" };
 const boldNavBtn = { background: "none", border: "none", cursor: "pointer", color: C.ink, padding: "4px 0", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em" };
+const activeNavBtn = { ...boldNavBtn, color: C.bronze, borderBottom: `2px solid ${C.bronze}` };
 
 function Footer({ setView }) {
   const { t, categoryLabel } = useLang();
@@ -1403,7 +1382,7 @@ export default function SadaarMarketplace() {
 
       {!returningPayment && (
         <>
-          <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} />
+          <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} currentView={view} />
 
           {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "browse" && <Browse key={`${view.cat || "all"}-${view.subcat || "all"}`} initialCat={view.cat} initialSubcat={view.subcat} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
