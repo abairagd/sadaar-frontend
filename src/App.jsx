@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
-import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, Sparkles, Globe } from "lucide-react";
+import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, Sparkles, Globe, User } from "lucide-react";
 import { FaInstagram, FaTiktok, FaSnapchat, FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
@@ -124,8 +124,9 @@ function setPageMeta(title, description) {
   }
 }
 
-// Device-based wishlist (no customer accounts exist yet, so this can't sync
-// across devices — it's stored per browser via localStorage).
+// Guest wishlist — stored per device via localStorage. Once a customer logs
+// in, the wishlist switches to being stored server-side (synced across
+// devices) instead — see toggleWishlist in the main component.
 const WISHLIST_KEY = "sadaar_wishlist";
 
 function getWishlistIds() {
@@ -139,6 +140,25 @@ function getWishlistIds() {
 
 function setWishlistIds(ids) {
   localStorage.setItem(WISHLIST_KEY, JSON.stringify(ids));
+}
+
+// --- Customer account auth ---
+const CUSTOMER_AUTH_KEY = "sadaar_customer_auth";
+
+function getSavedCustomerAuth() {
+  try {
+    const raw = localStorage.getItem(CUSTOMER_AUTH_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveCustomerAuth(token, customer) {
+  try {
+    if (token && customer) localStorage.setItem(CUSTOMER_AUTH_KEY, JSON.stringify({ token, customer }));
+    else localStorage.removeItem(CUSTOMER_AUTH_KEY);
+  } catch {}
 }
 
 // --- Language / translations ---
@@ -206,6 +226,15 @@ const T = {
     enterOrderAndContact: "Enter both your order number and the email or phone you used.",
     contactUs: "Contact us", contactSubtitle: "Have a question about an order, a brand, or anything else? Send us a message.",
     shopTab: "Shop", aboutTab: "About", founderStory: "Founder story", brandPhilosophy: "Philosophy",
+    accountNav: "Account", myAccount: "My account", logIn: "Log in", signUp: "Sign up", logOut: "Log out",
+    fullNameField: "Full name", emailField: "Email", passwordField: "Password", confirmPasswordField: "Confirm password",
+    noAccountYet: "Don't have an account?", haveAccount: "Already have an account?", forgotPassword: "Forgot password?",
+    orderHistory: "Order history", myWishlist: "My wishlist", savedAddresses: "Saved addresses",
+    noOrdersYet: "No orders yet.", addAddress: "Add address", addressLabel: "Label (e.g. Home, Work)",
+    setAsDefault: "Set as default", defaultBadge: "Default", noAddressesYet: "No saved addresses yet.",
+    passwordsDontMatch: "Passwords don't match.", accountCreated: "Account created.",
+    useSavedAddress: "Use a saved address", orNewAddress: "Or enter a new address",
+    saveThisAddress: "Save this address to my account",
     signatureProducts: "Signature products", followUs: "Follow", visitWebsite: "Website",
     basedIn: (city) => `Based in ${city}`,
     yourName: "Your name", subjectOptional: "Subject (optional)", yourMessage: "Your message",
@@ -258,6 +287,15 @@ const T = {
     enterOrderAndContact: "أدخل رقم الطلب والبريد الإلكتروني أو الجوال المستخدم.",
     contactUs: "تواصل معنا", contactSubtitle: "لديك سؤال عن طلب أو ماركة أو أي شيء آخر؟ أرسل لنا رسالة.",
     shopTab: "تسوق", aboutTab: "عن الماركة", founderStory: "قصة المؤسس", brandPhilosophy: "الفلسفة",
+    accountNav: "الحساب", myAccount: "حسابي", logIn: "تسجيل الدخول", signUp: "إنشاء حساب", logOut: "تسجيل الخروج",
+    fullNameField: "الاسم الكامل", emailField: "البريد الإلكتروني", passwordField: "كلمة المرور", confirmPasswordField: "تأكيد كلمة المرور",
+    noAccountYet: "ليس لديك حساب؟", haveAccount: "لديك حساب بالفعل؟", forgotPassword: "نسيت كلمة المرور؟",
+    orderHistory: "سجل الطلبات", myWishlist: "قائمة المفضلة", savedAddresses: "العناوين المحفوظة",
+    noOrdersYet: "لا توجد طلبات بعد.", addAddress: "إضافة عنوان", addressLabel: "التسمية (مثل: المنزل، العمل)",
+    setAsDefault: "تعيين كافتراضي", defaultBadge: "افتراضي", noAddressesYet: "لا توجد عناوين محفوظة بعد.",
+    passwordsDontMatch: "كلمتا المرور غير متطابقتين.", accountCreated: "تم إنشاء الحساب.",
+    useSavedAddress: "استخدام عنوان محفوظ", orNewAddress: "أو أدخل عنوانًا جديدًا",
+    saveThisAddress: "حفظ هذا العنوان في حسابي",
     signatureProducts: "منتجات مميزة", followUs: "تابعي", visitWebsite: "الموقع الإلكتروني",
     basedIn: (city) => `مقرها في ${city}`,
     yourName: "اسمك", subjectOptional: "الموضوع (اختياري)", yourMessage: "رسالتك",
@@ -281,10 +319,14 @@ function useLang() {
   return useContext(LangContext);
 }
 
-async function api(path, options = {}) {
+async function api(path, options = {}, token) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
-    headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    },
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
@@ -366,7 +408,7 @@ function ErrorBox({ message }) {
   );
 }
 
-function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView }) {
+function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView, isLoggedIn }) {
   const { t, lang, toggleLang, categoryLabel, subcategoryLabel, productTypeLabel } = useLang();
   const [hoveredSubcat, setHoveredSubcat] = useState(null);
   const isHomeActive = currentView.type === "home";
@@ -396,6 +438,12 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView 
             {lang === "en" ? "ع" : "EN"}
           </button>
           <button onClick={onSearchClick} style={{ background: "none", border: "none", cursor: "pointer" }} aria-label="Search"><Search size={19} color={C.ink} /></button>
+          <button onClick={() => setView({ type: "account" })} style={{ background: "none", border: "none", cursor: "pointer", position: "relative" }} aria-label="Account">
+            <User size={19} color={C.ink} />
+            {isLoggedIn && (
+              <span style={{ position: "absolute", top: -2, insetInlineEnd: -2, background: "#2F5B3C", width: 8, height: 8, borderRadius: "50%" }} />
+            )}
+          </button>
           <button onClick={() => setView({ type: "wishlist" })} style={{ background: "none", border: "none", cursor: "pointer", position: "relative" }} aria-label="Wishlist">
             <Heart size={19} color={C.ink} />
             {wishlistCount > 0 && (
@@ -482,6 +530,7 @@ function Footer({ setView }) {
           <button onClick={() => setView({ type: "wishlist" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.wishlistNav}</button>
           <button onClick={() => setView({ type: "track" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.trackOrderNav}</button>
           <button onClick={() => setView({ type: "contact" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.contactNav}</button>
+          <button onClick={() => setView({ type: "account" })} style={{ display: "block", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textAlign: "left" }}>{t.myAccount}</button>
           <a href="https://sadaar-brand-dashboard.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.brandSignIn}</a>
           <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
         </div>
@@ -913,17 +962,39 @@ function Cart({ items, updateQty, removeItem, setView }) {
   );
 }
 
-function Checkout({ items, setView, clearCart }) {
+function Checkout({ items, setView, clearCart, customerToken, customerInfo }) {
   const subtotal = items.reduce((s, i) => s + i.product.price * i.qty, 0);
   const shipping = estimateShipping(items);
   const { t } = useLang();
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", city: "", address: "" });
+  const [form, setForm] = useState({ fullName: customerInfo?.fullName || "", email: customerInfo?.email || "", phone: "", city: "", address: "" });
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState(null);
   const [order, setOrder] = useState(null); // set once the (unpaid) order is created
   const [paid, setPaid] = useState(false);
   const [publishableKey, setPublishableKey] = useState(null);
   const formRef = React.useRef(null);
+
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [saveNewAddress, setSaveNewAddress] = useState(false);
+
+  useEffect(() => {
+    if (customerToken) {
+      api("/customers/me/addresses", {}, customerToken)
+        .then((addrs) => {
+          setSavedAddresses(addrs);
+          const def = addrs.find((a) => a.is_default) || addrs[0];
+          if (def) applySavedAddress(def);
+        })
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerToken]);
+
+  const applySavedAddress = (addr) => {
+    setSelectedAddressId(addr.id);
+    setForm((f) => ({ ...f, fullName: addr.full_name, phone: addr.phone || "", city: addr.city, address: addr.address }));
+  };
 
   const [promoInput, setPromoInput] = useState("");
   const [promo, setPromo] = useState(null); // { code, discountAmount }
@@ -971,8 +1042,14 @@ function Checkout({ items, setView, clearCart }) {
           items: items.map((i) => ({ variantId: i.variant.id, quantity: i.qty })),
           discountCode: promo?.code || undefined,
         }),
-      });
+      }, customerToken);
       setOrder(result);
+      if (customerToken && saveNewAddress && !selectedAddressId) {
+        api("/customers/me/addresses", {
+          method: "POST",
+          body: JSON.stringify({ fullName: form.fullName, phone: form.phone, city: form.city, address: form.address, isDefault: savedAddresses.length === 0 }),
+        }, customerToken).catch(() => {});
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -1078,12 +1155,33 @@ function Checkout({ items, setView, clearCart }) {
     <div style={{ maxWidth: 640, margin: "0 auto", padding: "32px 24px 64px" }}>
       <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 24, color: C.ink, marginBottom: 6 }}>{t.checkout}</h1>
       <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 24 }}>{t.checkoutSubtitle}</p>
+
+      {customerToken && savedAddresses.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.06em", textTransform: "uppercase", color: C.muted, marginBottom: 8 }}>{t.useSavedAddress}</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {savedAddresses.map((a) => (
+              <button key={a.id} onClick={() => applySavedAddress(a)} style={{ textAlign: "left", background: selectedAddressId === a.id ? C.sand : "none", border: `1px solid ${selectedAddressId === a.id ? C.ink : C.line}`, padding: "10px 12px", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char }}>
+                {a.label ? `${a.label} — ` : ""}{a.full_name}, {a.address}, {a.city}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 10 }}>{t.orNewAddress}</p>
+        </div>
+      )}
+
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
         <input placeholder={t.fullName} value={form.fullName} onChange={set("fullName")} style={inputStyle} />
         <input placeholder={t.emailOptional} value={form.email} onChange={set("email")} style={inputStyle} />
         <input placeholder={t.phoneNumber} value={form.phone} onChange={set("phone")} style={inputStyle} />
         <input placeholder={t.city} value={form.city} onChange={set("city")} style={inputStyle} />
         <input placeholder={t.address} value={form.address} onChange={set("address")} style={inputStyle} />
+        {customerToken && !selectedAddressId && (
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char }}>
+            <input type="checkbox" checked={saveNewAddress} onChange={(e) => setSaveNewAddress(e.target.checked)} />
+            {t.saveThisAddress}
+          </label>
+        )}
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -1290,6 +1388,277 @@ function BrandProfilePage({ slug, openProduct, wishlistIds, onToggleWishlist }) 
   );
 }
 
+function AccountAuth({ onLogin, initialResetToken, setView }) {
+  const { t } = useLang();
+  const [mode, setMode] = useState(initialResetToken ? "reset" : "login");
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetDone, setResetDone] = useState(false);
+
+  const submitLogin = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const result = await api("/customers/login", { method: "POST", body: JSON.stringify({ email, password }) });
+      onLogin(result.token, result.customer);
+      setView({ type: "account" });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitSignup = async (e) => {
+    e.preventDefault();
+    setError("");
+    if (password !== confirmPassword) return setError(t.passwordsDontMatch);
+    setLoading(true);
+    try {
+      const result = await api("/customers/signup", { method: "POST", body: JSON.stringify({ fullName, email, password }) });
+      onLogin(result.token, result.customer);
+      setView({ type: "account" });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitResetRequest = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await api("/customers/request-password-reset", { method: "POST", body: JSON.stringify({ email: resetEmail }) });
+      setResetSent(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitNewPassword = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await api("/customers/reset-password", { method: "POST", body: JSON.stringify({ token: initialResetToken, password: newPassword }) });
+      setResetDone(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 400, margin: "0 auto", padding: "48px 24px 64px" }}>
+      <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 20 }}>{mode === "signup" ? t.signUp : t.myAccount}</h1>
+
+      {mode === "login" && (
+        <>
+          <form onSubmit={submitLogin} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.emailField} style={inputStyle} />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder={t.passwordField} style={inputStyle} />
+            {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 12, margin: 0 }}>{error}</p>}
+            <button type="submit" disabled={loading} style={{ background: C.ink, color: C.warm, border: "none", padding: "13px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
+              {loading ? "..." : t.logIn}
+            </button>
+          </form>
+          <button onClick={() => { setMode("forgot"); setError(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "Inter, sans-serif", fontSize: 12, textDecoration: "underline", marginTop: 14, padding: 0, display: "block" }}>
+            {t.forgotPassword}
+          </button>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 20 }}>
+            {t.noAccountYet} <button onClick={() => { setMode("signup"); setError(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.ink, fontWeight: 600, padding: 0, fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "underline" }}>{t.signUp}</button>
+          </p>
+        </>
+      )}
+
+      {mode === "signup" && (
+        <>
+          <form onSubmit={submitSignup} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t.fullNameField} style={inputStyle} />
+            <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.emailField} style={inputStyle} />
+            <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" placeholder={t.passwordField} style={inputStyle} />
+            <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type="password" placeholder={t.confirmPasswordField} style={inputStyle} />
+            {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 12, margin: 0 }}>{error}</p>}
+            <button type="submit" disabled={loading} style={{ background: C.ink, color: C.warm, border: "none", padding: "13px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
+              {loading ? "..." : t.signUp}
+            </button>
+          </form>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 20 }}>
+            {t.haveAccount} <button onClick={() => { setMode("login"); setError(""); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.ink, fontWeight: 600, padding: 0, fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "underline" }}>{t.logIn}</button>
+          </p>
+        </>
+      )}
+
+      {mode === "forgot" && !resetSent && (
+        <form onSubmit={submitResetRequest} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <input value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder={t.emailField} style={inputStyle} />
+          {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 12, margin: 0 }}>{error}</p>}
+          <button type="submit" disabled={loading} style={{ background: C.ink, color: C.warm, border: "none", padding: "13px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "..." : t.forgotPassword}
+          </button>
+          <button type="button" onClick={() => setMode("login")} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontFamily: "Inter, sans-serif", fontSize: 12, textDecoration: "underline", padding: 0 }}>{t.logIn}</button>
+        </form>
+      )}
+      {mode === "forgot" && resetSent && (
+        <div>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char }}>If that email has a SADAAR account, a reset link is on its way.</p>
+        </div>
+      )}
+
+      {mode === "reset" && !resetDone && (
+        <form onSubmit={submitNewPassword} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} type="password" placeholder={t.passwordField} style={inputStyle} />
+          {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 12, margin: 0 }}>{error}</p>}
+          <button type="submit" disabled={loading} style={{ background: C.ink, color: C.warm, border: "none", padding: "13px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
+            {loading ? "..." : "Save"}
+          </button>
+        </form>
+      )}
+      {mode === "reset" && resetDone && (
+        <div>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char, marginBottom: 12 }}>Password updated.</p>
+          <button onClick={() => setMode("login")} style={{ background: C.ink, color: C.warm, border: "none", padding: "10px 20px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer" }}>{t.logIn}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Account({ customerInfo, customerToken, onLogout }) {
+  const { t } = useLang();
+  const [tab, setTab] = useState("orders");
+  const [orders, setOrders] = useState([]);
+  const [addresses, setAddresses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [addrForm, setAddrForm] = useState({ label: "", fullName: "", phone: "", city: "", address: "", isDefault: false });
+  const [savingAddr, setSavingAddr] = useState(false);
+  const [error, setError] = useState("");
+
+  const load = () => {
+    setLoading(true);
+    Promise.all([
+      api("/customers/me/orders", {}, customerToken),
+      api("/customers/me/addresses", {}, customerToken),
+    ]).then(([o, a]) => { setOrders(o); setAddresses(a); }).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  };
+
+  useEffect(load, [customerToken]);
+
+  const addAddress = async (e) => {
+    e.preventDefault();
+    setSavingAddr(true);
+    setError("");
+    try {
+      await api("/customers/me/addresses", { method: "POST", body: JSON.stringify(addrForm) }, customerToken);
+      setAddrForm({ label: "", fullName: "", phone: "", city: "", address: "", isDefault: false });
+      load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingAddr(false);
+    }
+  };
+
+  const deleteAddress = async (id) => {
+    try {
+      await api(`/customers/me/addresses/${id}`, { method: "DELETE" }, customerToken);
+      load();
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 700, margin: "0 auto", padding: "40px 24px 64px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, margin: 0 }}>{t.myAccount}</h1>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 4 }}>{customerInfo?.fullName} — {customerInfo?.email}</p>
+        </div>
+        <button onClick={onLogout} style={{ background: "none", border: `1px solid ${C.line}`, padding: "8px 16px", fontFamily: "Inter, sans-serif", fontSize: 13, cursor: "pointer", color: C.char }}>{t.logOut}</button>
+      </div>
+
+      <div style={{ display: "flex", gap: 20, borderBottom: `1px solid ${C.line}`, marginBottom: 24 }}>
+        {[["orders", t.orderHistory], ["addresses", t.savedAddresses]].map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ background: "none", border: "none", borderBottom: tab === id ? `2px solid ${C.ink}` : "2px solid transparent", padding: "10px 0", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, color: tab === id ? C.ink : C.muted }}>{label}</button>
+        ))}
+      </div>
+
+      {error && <p style={{ color: "#A3402F", fontFamily: "Inter, sans-serif", fontSize: 13, marginBottom: 16 }}>{error}</p>}
+      {loading && <Loading />}
+
+      {!loading && tab === "orders" && (
+        orders.length === 0 ? <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{t.noOrdersYet}</p> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {orders.map((o) => (
+              <div key={o.id} style={{ border: `1px solid ${C.line}`, padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <p style={{ fontFamily: "Fraunces, serif", fontSize: 16, color: C.ink, margin: 0 }}>Order #{o.id}</p>
+                  <span style={{ fontFamily: "Inter, sans-serif", fontSize: 12, textTransform: "uppercase", color: o.payment_status === "paid" ? "#2F5B3C" : C.muted }}>{o.payment_status}</span>
+                </div>
+                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, margin: "4px 0 10px" }}>{new Date(o.created_at).toLocaleDateString()} — {money(o.total)}</p>
+                {o.items.map((i) => (
+                  <p key={i.id} style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char, margin: "2px 0" }}>{i.product_name} × {i.quantity} — {i.brand_name}</p>
+                ))}
+              </div>
+            ))}
+          </div>
+        )
+      )}
+
+      {!loading && tab === "addresses" && (
+        <div>
+          {addresses.length === 0 ? (
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginBottom: 20 }}>{t.noAddressesYet}</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+              {addresses.map((a) => (
+                <div key={a.id} style={{ border: `1px solid ${C.line}`, padding: 14, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div>
+                    {a.label && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.06em", textTransform: "uppercase", color: C.bronze, margin: 0 }}>{a.label}{a.is_default ? ` · ${t.defaultBadge}` : ""}</p>}
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.ink, margin: "4px 0 0" }}>{a.full_name}</p>
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, margin: "2px 0 0" }}>{a.address}, {a.city}</p>
+                  </div>
+                  <button onClick={() => deleteAddress(a.id)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted }}><X size={16} /></button>
+                </div>
+              ))}
+            </div>
+          )}
+          <form onSubmit={addAddress} style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 380 }}>
+            <input value={addrForm.label} onChange={(e) => setAddrForm((f) => ({ ...f, label: e.target.value }))} placeholder={t.addressLabel} style={inputStyle} />
+            <input value={addrForm.fullName} onChange={(e) => setAddrForm((f) => ({ ...f, fullName: e.target.value }))} placeholder={t.fullNameField} style={inputStyle} />
+            <input value={addrForm.phone} onChange={(e) => setAddrForm((f) => ({ ...f, phone: e.target.value }))} placeholder={t.phoneNumber} style={inputStyle} />
+            <input value={addrForm.city} onChange={(e) => setAddrForm((f) => ({ ...f, city: e.target.value }))} placeholder={t.city} style={inputStyle} />
+            <input value={addrForm.address} onChange={(e) => setAddrForm((f) => ({ ...f, address: e.target.value }))} placeholder={t.address} style={inputStyle} />
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "Inter, sans-serif", fontSize: 13, color: C.char }}>
+              <input type="checkbox" checked={addrForm.isDefault} onChange={(e) => setAddrForm((f) => ({ ...f, isDefault: e.target.checked }))} />
+              {t.setAsDefault}
+            </label>
+            <button type="submit" disabled={savingAddr} style={{ background: C.ink, color: C.warm, border: "none", padding: "11px 0", fontFamily: "Inter, sans-serif", fontSize: 14, cursor: "pointer", opacity: savingAddr ? 0.7 : 1 }}>
+              {savingAddr ? "..." : t.addAddress}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Contact() {
   const { t } = useLang();
   const [name, setName] = useState("");
@@ -1463,6 +1832,49 @@ export default function SadaarMarketplace() {
   const [wishlistIds, setWishlistIdsState] = useState(() => getWishlistIds());
   const [lang, setLang] = useState(() => getLang());
 
+  const savedCustomerAuth = getSavedCustomerAuth();
+  const [customerToken, setCustomerToken] = useState(savedCustomerAuth?.token || null);
+  const [customerInfo, setCustomerInfo] = useState(savedCustomerAuth?.customer || null);
+
+  const loginCustomer = useCallback((token, customer) => {
+    setCustomerToken(token);
+    setCustomerInfo(customer);
+    saveCustomerAuth(token, customer);
+    // Server wishlist becomes the source of truth once logged in — replaces
+    // whatever was in the guest (localStorage) wishlist on this device.
+    api("/customers/me/wishlist", {}, token)
+      .then((rows) => setWishlistIdsState(rows.map((p) => p.id)))
+      .catch(() => {});
+  }, []);
+
+  const logoutCustomer = useCallback(() => {
+    setCustomerToken(null);
+    setCustomerInfo(null);
+    saveCustomerAuth(null, null);
+    setWishlistIdsState(getWishlistIds()); // fall back to this device's guest wishlist
+  }, []);
+
+  // If a customer password-reset link brought them here, route straight to
+  // the reset-password screen regardless of what page they'd otherwise land on.
+  useEffect(() => {
+    const resetToken = new URLSearchParams(window.location.search).get("resetToken");
+    if (resetToken) {
+      setView({ type: "account", resetToken });
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // If already logged in from a previous session, load their server wishlist on mount.
+  useEffect(() => {
+    if (customerToken) {
+      api("/customers/me/wishlist", {}, customerToken)
+        .then((rows) => setWishlistIdsState(rows.map((p) => p.id)))
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const toggleLang = useCallback(() => {
     setLang((prev) => {
       const next = prev === "en" ? "ar" : "en";
@@ -1481,13 +1893,23 @@ export default function SadaarMarketplace() {
     toggleLang,
   }), [lang, toggleLang]);
 
+  // Dual-mode: logged-in customers get a real server-synced wishlist (works
+  // across devices); guests keep the existing localStorage-only behavior.
   const toggleWishlist = useCallback((productId) => {
     setWishlistIdsState((prev) => {
-      const next = prev.includes(productId) ? prev.filter((id) => id !== productId) : [...prev, productId];
-      setWishlistIds(next);
+      const wasWishlisted = prev.includes(productId);
+      const next = wasWishlisted ? prev.filter((id) => id !== productId) : [...prev, productId];
+      if (customerToken) {
+        const request = wasWishlisted
+          ? api(`/customers/me/wishlist/${productId}`, { method: "DELETE" }, customerToken)
+          : api("/customers/me/wishlist", { method: "POST", body: JSON.stringify({ productId }) }, customerToken);
+        request.catch(() => {}); // optimistic — a rare failure here isn't worth blocking the UI over
+      } else {
+        setWishlistIds(next);
+      }
       return next;
     });
-  }, []);
+  }, [customerToken]);
   const [cart, setCart] = useState([]);
   const [brands, setBrands] = useState([]);
   const [homeProducts, setHomeProducts] = useState([]);
@@ -1606,7 +2028,7 @@ export default function SadaarMarketplace() {
 
       {!returningPayment && (
         <>
-          <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} currentView={view} />
+          <Header setView={setView} cartCount={cartCount} wishlistCount={wishlistIds.length} onSearchClick={() => setView({ type: "browse" })} currentView={view} isLoggedIn={!!customerToken} />
 
           {view.type === "home" && <Home setView={setView} openProduct={openProduct} products={homeProducts} brands={brands} loading={homeLoading} error={homeError} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "browse" && <Browse key={`${view.cat || "all"}-${view.subcat || "all"}-${view.ptype || "all"}`} initialCat={view.cat} initialSubcat={view.subcat} initialPtype={view.ptype} openProduct={openProduct} brands={brands} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
@@ -1627,9 +2049,14 @@ export default function SadaarMarketplace() {
           {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} wishlisted={wishlistIds.includes(view.id)} onToggleWishlist={toggleWishlist} openProduct={openProduct} wishlistIds={wishlistIds} openBrand={openBrand} />}
           {view.type === "brand" && <BrandProfilePage slug={view.slug} openProduct={openProduct} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
-          {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
+          {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} customerToken={customerToken} customerInfo={customerInfo} />}
           {view.type === "track" && <TrackOrder />}
           {view.type === "contact" && <Contact />}
+          {view.type === "account" && (
+            customerToken
+              ? <Account customerInfo={customerInfo} customerToken={customerToken} onLogout={logoutCustomer} />
+              : <AccountAuth onLogin={loginCustomer} initialResetToken={view.resetToken} setView={setView} />
+          )}
           {view.type === "wishlist" && <Wishlist wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} openProduct={openProduct} setView={setView} />}
 
           <Footer setView={setView} />
