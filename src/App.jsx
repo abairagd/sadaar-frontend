@@ -535,7 +535,14 @@ function Footer({ setView }) {
           <a href="https://sadaar-apply-brand.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: "block", color: "#C5CDCE", fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>{t.footerJoin}</a>
         </div>
       </div>
-      <div style={{ borderTop: "1px solid #253B3E", padding: "16px 24px", fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8A9598", textAlign: "center" }}>{t.footerCopyright}</div>
+      <div style={{ borderTop: "1px solid #253B3E", padding: "16px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
+          <button onClick={() => setView({ type: "faq" })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#8A9598", fontFamily: "Inter, sans-serif", fontSize: 12 }}>FAQ</button>
+          <button onClick={() => setView({ type: "terms" })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#8A9598", fontFamily: "Inter, sans-serif", fontSize: 12 }}>Terms of Service</button>
+          <button onClick={() => setView({ type: "privacy" })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: "#8A9598", fontFamily: "Inter, sans-serif", fontSize: 12 }}>Privacy Policy</button>
+        </div>
+        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: "#8A9598", textAlign: "center" }}>{t.footerCopyright}</div>
+      </div>
     </footer>
   );
 }
@@ -1659,6 +1666,135 @@ function Account({ customerInfo, customerToken, onLogout }) {
   );
 }
 
+const legalH1 = { fontFamily: "Fraunces, serif", fontSize: 26, color: C.ink, marginBottom: 8 };
+const legalH2 = { fontFamily: "Fraunces, serif", fontSize: 17, color: C.ink, marginTop: 28, marginBottom: 8 };
+const legalP = { fontFamily: "Inter, sans-serif", fontSize: 14, color: C.char, lineHeight: 1.7, marginBottom: 10 };
+const legalMeta = { fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginBottom: 24 };
+
+function FAQItem({ q, a }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: `1px solid ${C.line}`, padding: "16px 0" }}>
+      <button onClick={() => setOpen((o) => !o)} style={{ width: "100%", textAlign: "left", background: "none", border: "none", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "Fraunces, serif", fontSize: 16, color: C.ink, padding: 0 }}>
+        {q}
+        <Plus size={16} style={{ transform: open ? "rotate(45deg)" : "none", transition: "transform 0.15s ease", flexShrink: 0, marginLeft: 12 }} />
+      </button>
+      {open && <p style={{ ...legalP, marginTop: 10, marginBottom: 0 }}>{a}</p>}
+    </div>
+  );
+}
+
+function FAQ({ setView }) {
+  const faqs = [
+    { q: "How does SADAAR work?", a: "SADAAR is a marketplace for independent Saudi fashion brands. Each brand keeps full ownership of their inventory and ships orders themselves — SADAAR provides the storefront, checkout, and customer support so you can shop many brands in one place." },
+    { q: "How is shipping calculated?", a: "Shipping is charged per brand — SAR 25 per brand shipment, free once that brand's items in your order total SAR 300 or more. If your order includes items from two brands, you'll see two shipping charges (unless one or both qualify for free shipping)." },
+    { q: "How long does delivery take?", a: "Estimated delivery is 3–5 business days from when a brand ships your order. Each brand fulfills independently, so items from different brands in the same order may arrive separately." },
+    { q: "Can I cancel or return an order?", a: "You can request a cancellation for any item that hasn't shipped yet, from the Track Order page. Once the brand approves it, you'll be refunded to your original payment method. Items that have already shipped can't be cancelled through the site — contact us and we'll help." },
+    { q: "What payment methods are accepted?", a: "Payments are processed securely through Moyasar, supporting major credit and debit cards. SADAAR never sees or stores your full card details." },
+    { q: "Do I need an account to order?", a: "No — guest checkout is always available. Creating a free account lets you save addresses, sync your wishlist across devices, and see your full order history in one place." },
+    { q: "How do I track my order?", a: "Use the Track Order page with your order number and the email or phone number you used at checkout — or, if you have an account, your full order history is available under My Account." },
+    { q: "How do discount codes work?", a: "Enter a valid code at checkout to see the discount applied to your order total before payment. Codes may have a minimum order amount, an expiry date, or a limited number of uses." },
+    { q: "I'm a designer — how do I sell on SADAAR?", a: "Use the \"Apply to sell\" link in the footer to submit your brand for review. Our team reviews every application personally, usually within a few business days." },
+    { q: "Does SADAAR ship outside Saudi Arabia?", a: "Not at this time — SADAAR currently serves customers within Saudi Arabia only." },
+  ];
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 64px" }}>
+      <h1 style={legalH1}>Frequently Asked Questions</h1>
+      <p style={legalMeta}>Can't find what you're looking for? <button onClick={() => setView({ type: "contact" })} style={{ background: "none", border: "none", padding: 0, cursor: "pointer", color: C.bronze, fontFamily: "Inter, sans-serif", fontSize: 12, textDecoration: "underline" }}>Contact us</button> and we'll help directly.</p>
+      <div>
+        {faqs.map((f) => <FAQItem key={f.q} q={f.q} a={f.a} />)}
+      </div>
+    </div>
+  );
+}
+
+function Terms() {
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 64px" }}>
+      <h1 style={legalH1}>Terms of Service</h1>
+      <p style={legalMeta}>Last updated: July 2026. This is a starting draft prepared for SADAAR and has not yet been reviewed by a licensed attorney — it should be reviewed before being relied on as SADAAR's final, binding terms.</p>
+
+      <h2 style={legalH2}>1. About SADAAR</h2>
+      <p style={legalP}>SADAAR ("we," "us," "the platform") operates an online marketplace connecting customers with independent Saudi fashion brands ("brands," "sellers"). Each brand listed on SADAAR is an independent business that owns, lists, and fulfills its own products. SADAAR facilitates the storefront, checkout, and payment processing, and provides customer support, but is not the manufacturer or seller of record for products sold by brands on the platform.</p>
+
+      <h2 style={legalH2}>2. Accounts</h2>
+      <p style={legalP}>You may browse and purchase as a guest, or create a free account. If you create an account, you're responsible for keeping your login credentials secure and for all activity under your account. You must provide accurate information when creating an account or placing an order.</p>
+
+      <h2 style={legalH2}>3. Orders and Payment</h2>
+      <p style={legalP}>All prices are listed in Saudi Riyals (SAR) and are set independently by each brand. Placing an order is an offer to purchase, which SADAAR (on behalf of the relevant brand) may accept or decline — for example if an item is out of stock or pricing was listed in error. Payment is processed securely through Moyasar at the time of order. SADAAR does not store your full card details.</p>
+
+      <h2 style={legalH2}>4. Shipping and Delivery</h2>
+      <p style={legalP}>Each brand is responsible for fulfilling and shipping its own items. Shipping fees are calculated per brand and shown at checkout. Estimated delivery times are provided for guidance and are not guaranteed. If your order includes items from multiple brands, they may be shipped and delivered separately.</p>
+
+      <h2 style={legalH2}>5. Cancellations and Refunds</h2>
+      <p style={legalP}>You may request cancellation of any order item that has not yet shipped, through the Track Order page or your account's order history. The relevant brand reviews each request. If approved, the item's value is refunded to your original payment method; shipping charges are non-refundable for partial cancellations. Once an item has shipped, it can no longer be cancelled through the site — contact SADAAR support for help with returns or issues after delivery.</p>
+
+      <h2 style={legalH2}>6. Discount Codes</h2>
+      <p style={legalP}>Discount codes have no cash value, cannot be combined unless stated otherwise, and may be limited by minimum order value, expiry date, or number of uses. SADAAR reserves the right to deactivate a code or refuse its use in cases of suspected misuse.</p>
+
+      <h2 style={legalH2}>7. Brands Selling on SADAAR</h2>
+      <p style={legalP}>Brands approved to sell on SADAAR are independent businesses responsible for the accuracy of their product listings, the quality and legality of their products, and timely fulfillment of orders. SADAAR charges brands a commission on completed sales, as agreed at the time of onboarding. SADAAR reserves the right to suspend or remove a brand that violates these terms, misrepresents products, or fails to fulfill orders.</p>
+
+      <h2 style={legalH2}>8. Acceptable Use</h2>
+      <p style={legalP}>You agree not to use SADAAR for any unlawful purpose, to provide false information, to attempt to circumvent security measures, or to interfere with the platform's normal operation.</p>
+
+      <h2 style={legalH2}>9. Limitation of Liability</h2>
+      <p style={legalP}>SADAAR provides the marketplace platform "as is." To the fullest extent permitted by law, SADAAR is not liable for indirect, incidental, or consequential damages arising from your use of the platform, or from the acts or omissions of independent brands selling through it. Nothing in these terms limits liability that cannot be limited under applicable Saudi law.</p>
+
+      <h2 style={legalH2}>10. Changes to These Terms</h2>
+      <p style={legalP}>SADAAR may update these terms from time to time. Continued use of the platform after changes take effect constitutes acceptance of the updated terms.</p>
+
+      <h2 style={legalH2}>11. Governing Law</h2>
+      <p style={legalP}>These terms are governed by the laws of the Kingdom of Saudi Arabia.</p>
+
+      <h2 style={legalH2}>12. Contact</h2>
+      <p style={legalP}>Questions about these terms can be sent through the Contact page.</p>
+    </div>
+  );
+}
+
+function Privacy() {
+  return (
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 24px 64px" }}>
+      <h1 style={legalH1}>Privacy Policy</h1>
+      <p style={legalMeta}>Last updated: July 2026. This is a starting draft prepared for SADAAR and has not yet been reviewed by a licensed attorney specializing in Saudi data protection law — see the flagged note below before relying on this as SADAAR's final policy.</p>
+
+      <div style={{ background: "#F3E6D8", border: "1px solid #E5CBA3", padding: 16, marginBottom: 24 }}>
+        <p style={{ ...legalP, marginBottom: 0, color: "#8A5A1E" }}>
+          <strong>Open legal question — data residency:</strong> Saudi Arabia's Personal Data Protection Law (PDPL) generally requires personal data of Saudi residents to be stored within the Kingdom unless a specific exemption is obtained. SADAAR's current database provider does not offer an in-Kingdom hosting region. This needs review by a qualified Saudi data protection lawyer before this policy — or the underlying infrastructure — can be considered compliant.
+        </p>
+      </div>
+
+      <h2 style={legalH2}>1. What We Collect</h2>
+      <p style={legalP}>When you place an order or create an account, we collect information you provide directly: your name, email address, phone number, and shipping address. If you create an account, we also store your order history, saved addresses, and wishlist. We do not collect or store your full payment card details — payments are processed directly by Moyasar, our payment provider.</p>
+
+      <h2 style={legalH2}>2. How We Use It</h2>
+      <p style={legalP}>We use your information to process and fulfill orders, communicate with you about your orders (confirmations, shipping updates, support requests), operate your account if you create one, and improve the platform. We do not sell your personal information to third parties.</p>
+
+      <h2 style={legalH2}>3. Who We Share It With</h2>
+      <p style={legalP}>We share the minimum information needed with: the brand fulfilling your order (name, shipping address, and order details for items they're shipping); Moyasar, to process payment; and Resend, to deliver transactional emails (order confirmations, password resets). We do not share your information with advertisers or data brokers.</p>
+
+      <h2 style={legalH2}>4. Data Storage and Security</h2>
+      <p style={legalP}>Your information is stored on infrastructure provided by our technology partners and protected with industry-standard security practices, including encrypted connections and access controls. See the flagged note above regarding the location of that storage relative to PDPL requirements.</p>
+
+      <h2 style={legalH2}>5. Your Rights</h2>
+      <p style={legalP}>You may request access to, correction of, or deletion of your personal information by contacting us through the Contact page. We will respond in accordance with applicable Saudi law.</p>
+
+      <h2 style={legalH2}>6. Cookies and Local Storage</h2>
+      <p style={legalP}>SADAAR uses your browser's local storage to remember your cart, wishlist (if not logged in), and language preference. We do not use third-party advertising trackers.</p>
+
+      <h2 style={legalH2}>7. Children's Privacy</h2>
+      <p style={legalP}>SADAAR is not directed at children and is not knowingly used to collect information from children.</p>
+
+      <h2 style={legalH2}>8. Changes to This Policy</h2>
+      <p style={legalP}>We may update this policy from time to time. Material changes will be reflected by an updated "last updated" date above.</p>
+
+      <h2 style={legalH2}>9. Contact</h2>
+      <p style={legalP}>Questions about this policy, or requests regarding your personal information, can be sent through the Contact page.</p>
+    </div>
+  );
+}
+
 function Contact() {
   const { t } = useLang();
   const [name, setName] = useState("");
@@ -2052,6 +2188,9 @@ export default function SadaarMarketplace() {
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} customerToken={customerToken} customerInfo={customerInfo} />}
           {view.type === "track" && <TrackOrder />}
           {view.type === "contact" && <Contact />}
+          {view.type === "faq" && <FAQ setView={setView} />}
+          {view.type === "terms" && <Terms />}
+          {view.type === "privacy" && <Privacy />}
           {view.type === "account" && (
             customerToken
               ? <Account customerInfo={customerInfo} customerToken={customerToken} onLogout={logoutCustomer} />
