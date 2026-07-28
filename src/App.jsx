@@ -438,8 +438,8 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView 
 }
 
 const navBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0" };
-const boldNavBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "4px 0", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em", outline: "none" };
-const activeNavBtn = { ...boldNavBtn, color: C.ink };
+const boldNavBtn = { background: "none", border: "none", cursor: "pointer", color: C.char, padding: "6px 14px", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, letterSpacing: "0.01em", outline: "none", borderRadius: 3 };
+const activeNavBtn = { ...boldNavBtn, background: C.ink, color: C.warm };
 const inactiveNavBtn = boldNavBtn;
 
 function Footer({ setView }) {
