@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
 import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, Sparkles } from "lucide-react";
+import { FaInstagram, FaTiktok, FaSnapchat, FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
 
@@ -450,6 +451,14 @@ function Footer({ setView }) {
         <div style={{ maxWidth: 320 }}>
           <div style={{ fontFamily: "Fraunces, serif", fontSize: 22, marginBottom: 8 }}>SADAAR</div>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 1.6, color: "#C5CDCE" }}>{t.footerTagline}</p>
+          <div style={{ display: "flex", gap: 14, marginTop: 16 }}>
+            {/* Placeholder hrefs — replace with real profile URLs when ready */}
+            <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style={{ color: "#C5CDCE", display: "flex" }}><FaInstagram size={19} /></a>
+            <a href="#" target="_blank" rel="noopener noreferrer" aria-label="TikTok" style={{ color: "#C5CDCE", display: "flex" }}><FaTiktok size={19} /></a>
+            <a href="#" target="_blank" rel="noopener noreferrer" aria-label="Snapchat" style={{ color: "#C5CDCE", display: "flex" }}><FaSnapchat size={19} /></a>
+            <a href="#" target="_blank" rel="noopener noreferrer" aria-label="X" style={{ color: "#C5CDCE", display: "flex" }}><FaXTwitter size={19} /></a>
+            <a href="#" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style={{ color: "#C5CDCE", display: "flex" }}><FaWhatsapp size={19} /></a>
+          </div>
         </div>
         <div style={{ fontFamily: "Inter, sans-serif", fontSize: 13, lineHeight: 2, color: "#C5CDCE" }}>
           <div style={{ color: C.sand, marginBottom: 6, fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase" }}>{t.footerShop}</div>
