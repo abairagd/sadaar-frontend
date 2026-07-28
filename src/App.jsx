@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, createContext, useContext } from "react";
-import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, Sparkles } from "lucide-react";
+import { ShoppingBag, Search, Plus, Minus, ChevronLeft, Check, Loader2, Heart, Sparkles, Globe } from "lucide-react";
 import { FaInstagram, FaTiktok, FaSnapchat, FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 
 const API_BASE = "https://sadaar-backend-production.up.railway.app/api";
@@ -203,6 +203,9 @@ const T = {
     fillAllFields: "Please fill in all fields.",
     enterOrderAndContact: "Enter both your order number and the email or phone you used.",
     contactUs: "Contact us", contactSubtitle: "Have a question about an order, a brand, or anything else? Send us a message.",
+    shopTab: "Shop", aboutTab: "About", founderStory: "Founder story", brandPhilosophy: "Philosophy",
+    signatureProducts: "Signature products", followUs: "Follow", visitWebsite: "Website",
+    basedIn: (city) => `Based in ${city}`,
     yourName: "Your name", subjectOptional: "Subject (optional)", yourMessage: "Your message",
     sendMessage: "Send message", sending: "Sending...", messageSent: "Message sent",
     messageSentNote: "Thanks for reaching out — we'll get back to you by email.",
@@ -250,6 +253,9 @@ const T = {
     fillAllFields: "الرجاء تعبئة جميع الحقول.",
     enterOrderAndContact: "أدخلي رقم الطلب والبريد الإلكتروني أو الجوال المستخدم.",
     contactUs: "تواصلي معنا", contactSubtitle: "لديك سؤال عن طلب أو ماركة أو أي شيء آخر؟ أرسلي لنا رسالة.",
+    shopTab: "تسوقي", aboutTab: "عن الماركة", founderStory: "قصة المؤسس", brandPhilosophy: "الفلسفة",
+    signatureProducts: "منتجات مميزة", followUs: "تابعي", visitWebsite: "الموقع الإلكتروني",
+    basedIn: (city) => `مقرها في ${city}`,
     yourName: "اسمك", subjectOptional: "الموضوع (اختياري)", yourMessage: "رسالتك",
     sendMessage: "إرسال الرسالة", sending: "جارٍ الإرسال...", messageSent: "تم إرسال الرسالة",
     messageSentNote: "شكرًا لتواصلك — سنرد عليك عبر البريد الإلكتروني.",
@@ -755,7 +761,7 @@ function Gallery({ product }) {
   );
 }
 
-function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWishlist, openProduct, wishlistIds }) {
+function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWishlist, openProduct, wishlistIds, openBrand }) {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -798,7 +804,7 @@ function ProductDetail({ productId, onBack, onAddToCart, wishlisted, onToggleWis
       <div className="sadaar-product-layout" style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
         <div className="sadaar-product-image" style={{ flex: "1 1 380px" }}><Gallery product={product} /></div>
         <div style={{ flex: "1 1 320px" }}>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze }}>{product.brand_name}</p>
+          <button onClick={() => openBrand && openBrand(product.brand_slug)} style={{ background: "none", border: "none", cursor: openBrand ? "pointer" : "default", padding: 0, fontFamily: "Inter, sans-serif", fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze, textDecoration: openBrand ? "underline" : "none" }}>{product.brand_name}</button>
           <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: 30, color: C.ink, margin: "6px 0" }}>{product.name}</h1>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginBottom: 12 }}>{categoryLabel(product.category)}{product.subcategory ? ` · ${subcategoryLabel(product.subcategory)}` : ""}{product.product_type ? ` · ${productTypeLabel(product.product_type)}` : ""}</p>
           <p style={{ fontFamily: "Inter, sans-serif", fontSize: 18, color: C.char, marginBottom: 20 }}>{money(product.price)}</p>
@@ -1163,6 +1169,123 @@ function Wishlist({ wishlistIds, onToggleWishlist, openProduct, setView }) {
   );
 }
 
+function BrandProfilePage({ slug, openProduct, wishlistIds, onToggleWishlist }) {
+  const [brand, setBrand] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [tab, setTab] = useState("shop");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { t } = useLang();
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    api(`/brands/${slug}`)
+      .then((b) => {
+        setBrand(b);
+        setPageMeta(`${b.name} — SADAAR`, b.description ? b.description.slice(0, 160) : `Shop ${b.name} on SADAAR.`);
+        return api(`/products?brandId=${b.id}`);
+      })
+      .then(setProducts)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [slug]);
+
+  if (loading) return <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px" }}><Loading /></div>;
+  if (error || !brand) return <div style={{ maxWidth: 1180, margin: "0 auto", padding: "40px 24px" }}><ErrorBox message={error || "Brand not found."} /></div>;
+
+  const socialLinks = [
+    { url: brand.instagram_url, Icon: FaInstagram, label: "Instagram" },
+    { url: brand.tiktok_url, Icon: FaTiktok, label: "TikTok" },
+    { url: brand.snapchat_url, Icon: FaSnapchat, label: "Snapchat" },
+    { url: brand.x_url, Icon: FaXTwitter, label: "X" },
+    { url: brand.whatsapp_url, Icon: FaWhatsapp, label: "WhatsApp" },
+  ].filter((s) => s.url);
+
+  return (
+    <div>
+      <div style={{ background: C.deep, color: C.sand, padding: "48px 24px" }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto" }}>
+          <h1 style={{ fontFamily: "Fraunces, serif", fontWeight: 500, fontSize: "clamp(28px, 4vw, 40px)", margin: 0 }}>{brand.name}</h1>
+          {brand.origin_city && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: "#C5CDCE", marginTop: 8 }}>{t.basedIn(brand.origin_city)}</p>}
+          {brand.description && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: "#C5CDCE", marginTop: 12, maxWidth: 560, lineHeight: 1.6 }}>{brand.description}</p>}
+        </div>
+      </div>
+
+      <div style={{ borderBottom: `1px solid ${C.line}`, background: C.warm }}>
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "0 24px", display: "flex", gap: 24 }}>
+          <button onClick={() => setTab("shop")} style={{ background: "none", border: "none", borderBottom: tab === "shop" ? `2px solid ${C.ink}` : "2px solid transparent", padding: "14px 0", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, color: tab === "shop" ? C.ink : C.muted }}>{t.shopTab}</button>
+          <button onClick={() => setTab("about")} style={{ background: "none", border: "none", borderBottom: tab === "about" ? `2px solid ${C.ink}` : "2px solid transparent", padding: "14px 0", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, fontWeight: 700, color: tab === "about" ? C.ink : C.muted }}>{t.aboutTab}</button>
+        </div>
+      </div>
+
+      {tab === "shop" && (
+        <div style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 24px 64px" }}>
+          {products.length === 0 ? (
+            <p style={{ fontFamily: "Inter, sans-serif", color: C.muted }}>No products yet.</p>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "28px 20px" }}>
+              {products.map((p) => <ProductCard key={p.id} product={p} onOpen={openProduct} wishlisted={wishlistIds.includes(p.id)} onToggleWishlist={onToggleWishlist} />)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {tab === "about" && (
+        <div style={{ maxWidth: 720, margin: "0 auto", padding: "40px 24px 64px" }}>
+          {brand.founder_story && (
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze, marginBottom: 10 }}>{t.founderStory}</p>
+              <p style={{ fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{brand.founder_story}</p>
+            </div>
+          )}
+          {brand.brand_philosophy && (
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze, marginBottom: 10 }}>{t.brandPhilosophy}</p>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 15, color: C.char, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{brand.brand_philosophy}</p>
+            </div>
+          )}
+
+          {brand.signatureProducts && brand.signatureProducts.length > 0 && (
+            <div style={{ marginBottom: 32 }}>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze, marginBottom: 14 }}>{t.signatureProducts}</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
+                {brand.signatureProducts.map((p) => (
+                  <button key={p.id} onClick={() => openProduct(p.id)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                    <Swatch product={p} height={140} />
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.ink, marginTop: 8 }}>{p.name}</p>
+                    <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, margin: "2px 0 0" }}>{money(p.price)}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {(socialLinks.length > 0 || brand.website_url) && (
+            <div>
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.bronze, marginBottom: 12 }}>{t.followUs}</p>
+              <div style={{ display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
+                {socialLinks.map(({ url, Icon, label }) => (
+                  <a key={label} href={url} target="_blank" rel="noopener noreferrer" aria-label={label} style={{ color: C.ink, display: "flex" }}><Icon size={20} /></a>
+                ))}
+                {brand.website_url && (
+                  <a href={brand.website_url} target="_blank" rel="noopener noreferrer" style={{ color: C.ink, display: "flex", alignItems: "center", gap: 6, fontFamily: "Inter, sans-serif", fontSize: 13, textDecoration: "none" }}>
+                    <Globe size={18} /> {t.visitWebsite}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!brand.founder_story && !brand.brand_philosophy && (!brand.signatureProducts || brand.signatureProducts.length === 0) && socialLinks.length === 0 && !brand.website_url && (
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 14, color: C.muted }}>This brand hasn't added their story yet.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Contact() {
   const { t } = useLang();
   const [name, setName] = useState("");
@@ -1379,6 +1502,7 @@ export default function SadaarMarketplace() {
   }, []);
 
   const openProduct = useCallback((id) => { setView({ type: "product", id }); window.scrollTo?.(0, 0); }, []);
+  const openBrand = useCallback((slug) => { setView({ type: "brand", slug }); window.scrollTo?.(0, 0); }, []);
 
   useEffect(() => {
     const titles = {
@@ -1458,13 +1582,14 @@ export default function SadaarMarketplace() {
                   <div key={b.id} style={{ border: `1px solid ${C.line}`, padding: 20, background: C.warm }}>
                     <p style={{ margin: 0, fontFamily: "Fraunces, serif", fontSize: 18, color: C.ink }}>{b.name}</p>
                     <p style={{ margin: "6px 0 0", fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{b.description}</p>
-                    <button onClick={() => setView({ type: "browse", cat: b.category })} style={{ marginTop: 14, background: "none", border: `1px solid ${C.ink}`, padding: "8px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer" }}>{langCtx.t.shopBrand(b.name)}</button>
+                    <button onClick={() => openBrand(b.slug)} style={{ marginTop: 14, background: "none", border: `1px solid ${C.ink}`, padding: "8px 14px", fontFamily: "Inter, sans-serif", fontSize: 12, cursor: "pointer" }}>{langCtx.t.shopBrand(b.name)}</button>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} wishlisted={wishlistIds.includes(view.id)} onToggleWishlist={toggleWishlist} openProduct={openProduct} wishlistIds={wishlistIds} />}
+          {view.type === "product" && <ProductDetail productId={view.id} onBack={() => setView({ type: "browse" })} onAddToCart={addToCart} wishlisted={wishlistIds.includes(view.id)} onToggleWishlist={toggleWishlist} openProduct={openProduct} wishlistIds={wishlistIds} openBrand={openBrand} />}
+          {view.type === "brand" && <BrandProfilePage slug={view.slug} openProduct={openProduct} wishlistIds={wishlistIds} onToggleWishlist={toggleWishlist} />}
           {view.type === "cart" && <Cart items={cart} updateQty={updateQty} removeItem={removeItem} setView={setView} />}
           {view.type === "checkout" && <Checkout items={cart} setView={setView} clearCart={() => setCart([])} />}
           {view.type === "track" && <TrackOrder />}
