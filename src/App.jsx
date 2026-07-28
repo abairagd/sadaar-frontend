@@ -60,11 +60,23 @@ const SUBCATEGORIES_BY_CATEGORY = {
 // Product types are the finest taxonomy level, keyed by subcategory. Same
 // philosophy as subcategories — free text on the backend, curated options
 // here for a consistent dropdown. Add more anytime by editing this list.
-const PRODUCT_TYPES_BY_SUBCATEGORY = {
-  Clothing: ["T-Shirts", "Button-Up Shirts", "Polo Shirts", "Sweatshirts", "Hoodies", "Jeans", "Cargo Pants", "Chinos", "Joggers", "Shorts", "Bomber Jackets", "Swim Trunks", "Swim Shorts", "One-Piece", "Bikini", "Classic Thobe", "Modern Thobe", "Classic Abaya", "Embroidered Abaya", "Kimono Abaya", "Maxi Dress", "Midi Dress", "Evening Dress"],
-  Shoes: ["Sneakers", "Sandals", "Boots", "Heels", "Loafers"],
-  Accessories: ["Bags", "Belts", "Watches", "Sunglasses"],
-  Jewelry: ["Necklaces", "Rings", "Bracelets", "Earrings"],
+// Product types are nested by category first, then subcategory — this is
+// what keeps women's-only items (Bikini, Abayas, Dresses) from ever showing
+// up as options under Men, and vice versa, even though "Clothing" is a
+// shared subcategory name for both.
+const PRODUCT_TYPES_BY_CATEGORY = {
+  Men: {
+    Clothing: ["T-Shirts", "Button-Up Shirts", "Polo Shirts", "Sweatshirts", "Hoodies", "Jeans", "Cargo Pants", "Chinos", "Joggers", "Shorts", "Bomber Jackets", "Swim Trunks", "Classic Thobe", "Modern Thobe"],
+    Shoes: ["Sneakers", "Sandals", "Boots", "Loafers"],
+    Accessories: ["Bags", "Belts", "Watches", "Sunglasses"],
+    Jewelry: ["Necklaces", "Rings", "Bracelets"],
+  },
+  Women: {
+    Clothing: ["T-Shirts", "Sweatshirts", "Hoodies", "Jeans", "Cargo Pants", "Chinos", "Joggers", "Shorts", "Swim Shorts", "One-Piece", "Bikini", "Classic Abaya", "Embroidered Abaya", "Kimono Abaya", "Maxi Dress", "Midi Dress", "Evening Dress"],
+    Shoes: ["Sneakers", "Sandals", "Boots", "Heels", "Loafers"],
+    Accessories: ["Bags", "Belts", "Watches", "Sunglasses"],
+    Jewelry: ["Necklaces", "Rings", "Bracelets", "Earrings"],
+  },
 };
 
 const catTone = {
@@ -399,10 +411,10 @@ function Header({ setView, cartCount, wishlistCount, onSearchClick, currentView 
                 >
                   {subcategoryLabel(s)}
                 </button>
-                {hoveredSubcat === s && (PRODUCT_TYPES_BY_SUBCATEGORY[s] || []).length > 0 && (
+                {hoveredSubcat === s && ((PRODUCT_TYPES_BY_CATEGORY[activeCat] && PRODUCT_TYPES_BY_CATEGORY[activeCat][s]) || []).length > 0 && (
                   <div style={{ position: "absolute", top: "100%", insetInlineStart: 0, paddingTop: 10, zIndex: 30 }}>
                     <div style={{ background: C.warm, border: `1px solid ${C.line}`, boxShadow: "0 8px 20px rgba(0,0,0,0.08)", minWidth: 200, maxHeight: 320, overflowY: "auto", padding: "10px 0" }}>
-                      {PRODUCT_TYPES_BY_SUBCATEGORY[s].map((pt) => (
+                      {PRODUCT_TYPES_BY_CATEGORY[activeCat][s].map((pt) => (
                         <button
                           key={pt}
                           onClick={() => { setView({ type: "browse", cat: activeCat, subcat: s, ptype: pt }); setHoveredSubcat(null); }}
@@ -645,11 +657,11 @@ function Browse({ initialCat, initialSubcat, initialPtype, openProduct, brands, 
             </div>
           </>
         )}
-        {subcat !== "all" && (PRODUCT_TYPES_BY_SUBCATEGORY[subcat] || []).length > 0 && (
+        {subcat !== "all" && ((PRODUCT_TYPES_BY_CATEGORY[cat] && PRODUCT_TYPES_BY_CATEGORY[cat][subcat]) || []).length > 0 && (
           <>
             <p style={{ fontFamily: "Inter, sans-serif", fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: C.muted, marginBottom: 10 }}>{subcategoryLabel(subcat)}</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
-              {["all", ...PRODUCT_TYPES_BY_SUBCATEGORY[subcat]].map((pt) => (
+              {["all", ...PRODUCT_TYPES_BY_CATEGORY[cat][subcat]].map((pt) => (
                 <button key={pt} onClick={() => setPtype(pt)} style={{ textAlign: "left", background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 14, color: ptype === pt ? C.ink : C.muted, fontWeight: ptype === pt ? 600 : 400 }}>{pt === "all" ? t.all : productTypeLabel(pt)}</button>
               ))}
             </div>
